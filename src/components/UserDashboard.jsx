@@ -15,7 +15,7 @@ export default function UserDashboard({ currentUser }) {
   const [editingResource, setEditingResource] = useState(null);
 
   const fetchDashboard = useCallback(() => {
-    apiFetch(`/api/v1/users/${currentUser.id}/dashboard`)
+    apiFetch(`/api/v1/dashboard`)
       .then((data) => {
         setDashboard(data);
         setErrorMessage("");
@@ -24,7 +24,7 @@ export default function UserDashboard({ currentUser }) {
         setDashboard(null);
         setErrorMessage(error.message);
       });
-  }, [currentUser.id]);
+  }, []);
 
   useEffect(() => {
     fetchDashboard();
