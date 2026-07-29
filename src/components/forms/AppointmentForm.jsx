@@ -219,7 +219,7 @@ export default function AppointmentForm({
 
       {usesDefaultDuration && (
         <p className="warning">
-          This appointment has no service duration. ServiceBook will reserve the resource for 60 minutes unless you
+          This appointment has no service duration. Calderizzler will reserve the resource for 60 minutes unless you
           enter a custom duration.
         </p>
       )}
