@@ -7,24 +7,30 @@ export default function AppointmentForm({
   initialClientId = "",
   existingAppointment = null,
   onAppointmentUpdated,
+  onCancel,
 }) {
   const navigate = useNavigate();
   const isEditing = Boolean(existingAppointment);
 
   const [services, setServices] = useState([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState(
-    existingAppointment?.services?.map((service) => service.id) || []
+    existingAppointment?.services?.map((service) => service.id) ?? []
   );
 
   const [resources, setResources] = useState([]);
-  const [resourceId, setResourceId] = useState(existingAppointment?.resource_id || "");
-  const [durationMinutes, setDurationMinutes] = useState(existingAppointment?.duration_minutes || "");
+  const [resourceId, setResourceId] = useState(existingAppointment?.resource_id ?? "");
+
+  const [durationMinutes, setDurationMinutes] = useState(existingAppointment?.duration_minutes ?? "");
+
+  const [isDurationOverridden, setIsDurationOverridden] = useState(existingAppointment?.duration_overridden ?? false);
 
   const [clients, setClients] = useState([]);
-  const [clientId, setClientId] = useState(existingAppointment?.client_id || initialClientId || "");
+  const [clientId, setClientId] = useState(existingAppointment?.client_id ?? initialClientId);
 
-  const [scheduledAt, setScheduledAt] = useState(existingAppointment?.scheduled_at || "");
-  const [status, setStatus] = useState(existingAppointment?.status || "scheduled");
+  const [scheduledAt, setScheduledAt] = useState(existingAppointment?.scheduled_at ?? "");
+
+  const [status, setStatus] = useState(existingAppointment?.status ?? "scheduled");
+
   const [error, setError] = useState("");
 
   const [newClient, setNewClient] = useState({
@@ -36,58 +42,154 @@ export default function AppointmentForm({
 
   const isNewClient = clientId === "new";
 
+  const selectedServices = services.filter((service) => selectedServiceIds.includes(service.id));
+
+  const selectedServiceDurationTotal = selectedServices.reduce(
+    (total, service) => total + Number(service.duration_minutes ?? 0),
+    0
+  );
+
   useEffect(() => {
-    apiFetch(`/api/v1/users/${currentUser.id}/dashboard`)
-      .then((data) => setClients(data.clients || []))
-      .catch((error) => {
+    apiFetch("/api/v1/dashboard")
+      .then((data) => {
+        setClients(data.clients ?? []);
+      })
+      .catch((requestError) => {
         setClients([]);
-        setError(error.message);
+        setError(requestError.message);
       });
 
     apiFetch("/api/v1/services")
-      .then((data) => setServices(data))
-      .catch((error) => {
+      .then((data) => {
+        setServices(data ?? []);
+      })
+      .catch((requestError) => {
         setServices([]);
-        setError(error.message);
+        setError(requestError.message);
       });
 
     apiFetch("/api/v1/resources")
-      .then((data) => setResources(data))
-      .catch((error) => {
+      .then((data) => {
+        setResources(data ?? []);
+      })
+      .catch((requestError) => {
         setResources([]);
-        setError(error.message);
+        setError(requestError.message);
       });
   }, [currentUser.id]);
 
   function handleNewClientChange(event) {
-    setNewClient({
-      ...newClient,
-      [event.target.name]: event.target.value,
-    });
+    const { name, value } = event.target;
+
+    setNewClient((currentClient) => ({
+      ...currentClient,
+      [name]: value,
+    }));
+  }
+
+  function calculateDuration(serviceIds) {
+    return services
+      .filter((service) => serviceIds.includes(service.id))
+      .reduce((total, service) => total + Number(service.duration_minutes ?? 0), 0);
+  }
+
+  function handleServiceToggle(serviceId) {
+    const updatedServiceIds = selectedServiceIds.includes(serviceId)
+      ? selectedServiceIds.filter((id) => id !== serviceId)
+      : [...selectedServiceIds, serviceId];
+
+    setSelectedServiceIds(updatedServiceIds);
+
+    if (!isDurationOverridden) {
+      setDurationMinutes(calculateDuration(updatedServiceIds));
+    }
+  }
+
+  function handleDurationChange(event) {
+    setDurationMinutes(event.target.value);
+    setIsDurationOverridden(true);
+  }
+
+  function useCalculatedDuration() {
+    setDurationMinutes(selectedServiceDurationTotal);
+    setIsDurationOverridden(false);
   }
 
   function saveAppointment(selectedClientId) {
     const url = isEditing ? `/api/v1/appointments/${existingAppointment.id}` : "/api/v1/appointments";
+
     const method = isEditing ? "PATCH" : "POST";
 
     return apiFetch(url, {
       method,
       body: JSON.stringify({
         appointment: {
-          client_id: selectedClientId,
-          resource_id: resourceId,
+          client_id: Number(selectedClientId),
+          resource_id: Number(resourceId),
           scheduled_at: scheduledAt,
           status,
-          duration_minutes: durationMinutes || null,
-          service_ids: selectedServiceIds,
+          duration_minutes: Number(durationMinutes),
+          duration_overridden: isDurationOverridden,
+          service_ids: selectedServiceIds.map(Number),
         },
       }),
     });
   }
 
+  function handleCancel() {
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+
+    navigate(-1);
+  }
+
   function handleSubmit(event) {
     event.preventDefault();
     setError("");
+
+    if (!clientId) {
+      setError("Select a client.");
+      return;
+    }
+
+    if (isNewClient && !newClient.first_name.trim()) {
+      setError("Enter the new client's first name.");
+      return;
+    }
+
+    if (isNewClient && !newClient.last_name.trim()) {
+      setError("Enter the new client's last name.");
+      return;
+    }
+
+    if (selectedServiceIds.length === 0) {
+      setError("Select at least one service.");
+      return;
+    }
+
+    if (!scheduledAt) {
+      setError("Select an appointment date and time.");
+      return;
+    }
+
+    if (!resourceId) {
+      setError("Select a resource.");
+      return;
+    }
+
+    if (durationMinutes === "") {
+      setError("Unable to calculate the appointment duration.");
+      return;
+    }
+
+    const parsedDuration = Number(durationMinutes);
+
+    if (!Number.isInteger(parsedDuration) || parsedDuration < 0) {
+      setError("Duration must be a whole number of 0 minutes or more.");
+      return;
+    }
 
     if (isNewClient) {
       apiFetch("/api/v1/clients", {
@@ -98,14 +200,12 @@ export default function AppointmentForm({
           },
         }),
       })
-        .then((createdClient) => {
-          return saveAppointment(createdClient.id).then(() => createdClient);
-        })
+        .then((createdClient) => saveAppointment(createdClient.id).then(() => createdClient))
         .then((createdClient) => {
           navigate(`/clients/${createdClient.id}`);
         })
-        .catch((error) => {
-          setError(error.message);
+        .catch((requestError) => {
+          setError(requestError.message);
         });
 
       return;
@@ -115,24 +215,15 @@ export default function AppointmentForm({
       .then(() => {
         if (isEditing && onAppointmentUpdated) {
           onAppointmentUpdated();
-        } else {
-          navigate(`/clients/${clientId}`);
+          return;
         }
+
+        navigate(`/clients/${clientId}`);
       })
-      .catch((error) => {
-        setError(error.message);
+      .catch((requestError) => {
+        setError(requestError.message);
       });
   }
-
-  const selectedServices = services.filter((service) => selectedServiceIds.includes(service.id));
-
-  const selectedServiceDurationTotal = selectedServices.reduce(
-    (total, service) => total + Number(service.duration_minutes || 0),
-    0
-  );
-
-  const usesDefaultDuration =
-    durationMinutes === "" && selectedServices.length > 0 && selectedServiceDurationTotal === 0;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -141,6 +232,7 @@ export default function AppointmentForm({
       {error && <p className="error">{error}</p>}
 
       <label htmlFor="client">Client</label>
+
       <select id="client" value={clientId} onChange={(event) => setClientId(event.target.value)}>
         <option value="">Select a client</option>
 
@@ -156,15 +248,19 @@ export default function AppointmentForm({
       {isNewClient && (
         <div>
           <label htmlFor="first_name">First Name</label>
+
           <input id="first_name" name="first_name" value={newClient.first_name} onChange={handleNewClientChange} />
 
           <label htmlFor="last_name">Last Name</label>
+
           <input id="last_name" name="last_name" value={newClient.last_name} onChange={handleNewClientChange} />
 
           <label htmlFor="email">Email</label>
+
           <input id="email" name="email" type="email" value={newClient.email} onChange={handleNewClientChange} />
 
           <label htmlFor="phone">Phone</label>
+
           <input id="phone" name="phone" value={newClient.phone} onChange={handleNewClientChange} />
         </div>
       )}
@@ -176,19 +272,16 @@ export default function AppointmentForm({
           <input
             type="checkbox"
             checked={selectedServiceIds.includes(service.id)}
-            onChange={() => {
-              if (selectedServiceIds.includes(service.id)) {
-                setSelectedServiceIds(selectedServiceIds.filter((id) => id !== service.id));
-              } else {
-                setSelectedServiceIds([...selectedServiceIds, service.id]);
-              }
-            }}
+            onChange={() => handleServiceToggle(service.id)}
           />
-          {service.title} - ${service.price} - {service.duration_minutes || 0} min
+          {service.title} - ${service.price} - {service.duration_minutes ?? 0} min
         </label>
       ))}
 
+      {selectedServiceIds.length > 0 && <p>Service total: {selectedServiceDurationTotal} minutes</p>}
+
       <label htmlFor="scheduled_at">Scheduled At</label>
+
       <input
         id="scheduled_at"
         type="datetime-local"
@@ -197,6 +290,7 @@ export default function AppointmentForm({
       />
 
       <label htmlFor="resource">Resource</label>
+
       <select id="resource" value={resourceId} onChange={(event) => setResourceId(event.target.value)}>
         <option value="">Select a resource</option>
 
@@ -207,26 +301,32 @@ export default function AppointmentForm({
         ))}
       </select>
 
-      <label htmlFor="duration_minutes">Duration Override Minutes</label>
+      <label htmlFor="duration_minutes">Duration Minutes</label>
+
       <input
         id="duration_minutes"
         type="number"
-        min="1"
+        min="0"
+        step="1"
         value={durationMinutes}
-        onChange={(event) => setDurationMinutes(event.target.value)}
-        placeholder="Leave blank to use service duration"
+        onChange={handleDurationChange}
+        placeholder="Select a service to calculate duration"
       />
 
-      {usesDefaultDuration && (
-        <p className="warning">
-          This appointment has no service duration. Calderizzler will reserve the resource for 60 minutes unless you
-          enter a custom duration.
-        </p>
+      {isDurationOverridden && (
+        <div>
+          <p>Duration has been manually changed from the service total of {selectedServiceDurationTotal} minutes.</p>
+
+          <button type="button" onClick={useCalculatedDuration}>
+            Use Service Total ({selectedServiceDurationTotal} minutes)
+          </button>
+        </div>
       )}
 
       {isEditing && (
         <>
           <label htmlFor="status">Status</label>
+
           <select id="status" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="scheduled">Scheduled</option>
             <option value="completed">Completed</option>
@@ -236,6 +336,10 @@ export default function AppointmentForm({
       )}
 
       <button type="submit">{isEditing ? "Update Appointment" : "Create Appointment"}</button>
+
+      <button type="button" onClick={handleCancel}>
+        Cancel
+      </button>
     </form>
   );
 }

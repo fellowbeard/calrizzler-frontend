@@ -135,6 +135,10 @@ export default function ClientCard({ currentUser }) {
     fetchClient();
   }
 
+  function handleCancelAppointmentEdit() {
+    setEditingAppointment(null);
+  }
+
   return (
     <section className="client-card">
       {errorMessage && <p className="error">{errorMessage}</p>}
@@ -183,44 +187,58 @@ export default function ClientCard({ currentUser }) {
         {client.appointments?.length > 0 ? (
           [...client.appointments]
             .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at))
-            .map((appointment) => (
-              <button
-                key={appointment.id}
-                type="button"
-                className="appointment-item"
-                onClick={() => setEditingAppointment(appointment)}
-              >
-                <div className="appointment-meta">
-                  <strong>
-                    {new Date(appointment.scheduled_at).toLocaleString(undefined, {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </strong>
-                </div>
+            .map((appointment) => {
+              const serviceDurationTotal =
+                appointment.services?.reduce((total, service) => total + Number(service.duration_minutes ?? 0), 0) ?? 0;
 
-                <div className="appointment-services">
-                  {appointment.services?.length > 0 ? (
-                    appointment.services.map((svc) => (
-                      <div key={svc.id} className="service-entry">
-                        <div className="service-title">{svc.title}</div>
-                        <div className="service-desc">{svc.description}</div>
-                        <div className="service-meta">
-                          <span>${svc.price}</span>
-                          <span> • {svc.duration_minutes} minutes</span>
-                        </div>
+              return (
+                <button
+                  key={appointment.id}
+                  type="button"
+                  className="appointment-item"
+                  onClick={() => setEditingAppointment(appointment)}
+                >
+                  <div className="appointment-meta">
+                    <strong>
+                      {new Date(appointment.scheduled_at).toLocaleString(undefined, {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </strong>
+
+                    <div>Total appointment duration: {appointment.duration_minutes} minutes</div>
+
+                    {appointment.duration_overridden && (
+                      <div className="duration-override">
+                        Manually overridden from the current service total of {serviceDurationTotal} minutes
                       </div>
-                    ))
-                  ) : (
-                    <div className="service-entry">No services recorded for this appointment.</div>
-                  )}
-                </div>
-              </button>
-            ))
+                    )}
+                  </div>
+
+                  <div className="appointment-services">
+                    {appointment.services?.length > 0 ? (
+                      appointment.services.map((service) => (
+                        <div key={service.id} className="service-entry">
+                          <div className="service-title">{service.title}</div>
+
+                          <div className="service-desc">{service.description}</div>
+
+                          <div className="service-meta">
+                            <span>${service.price}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="service-entry">No services recorded for this appointment.</div>
+                    )}
+                  </div>
+                </button>
+              );
+            })
         ) : (
           <p>No services yet.</p>
         )}
@@ -228,9 +246,11 @@ export default function ClientCard({ currentUser }) {
 
       {editingAppointment && (
         <AppointmentForm
+          key={editingAppointment.id}
           currentUser={currentUser}
           existingAppointment={editingAppointment}
           onAppointmentUpdated={handleAppointmentUpdated}
+          onCancel={handleCancelAppointmentEdit}
         />
       )}
 
