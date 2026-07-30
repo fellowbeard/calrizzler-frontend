@@ -22,14 +22,8 @@ export default function AppointmentForm({
 
   const [durationMinutes, setDurationMinutes] = useState(existingAppointment?.duration_minutes ?? "");
 
-  // Preserve the saved duration while editing. For new appointments,
-  // service selections automatically determine the duration.
-  const initialServiceDurationTotal =
-    existingAppointment?.services?.reduce((total, service) => total + Number(service.duration_minutes ?? 0), 0) ?? 0;
+  const [isDurationOverridden, setIsDurationOverridden] = useState(existingAppointment?.duration_overridden ?? false);
 
-  const [isDurationOverridden, setIsDurationOverridden] = useState(
-    Boolean(existingAppointment && Number(existingAppointment.duration_minutes) !== initialServiceDurationTotal)
-  );
   const [clients, setClients] = useState([]);
   const [clientId, setClientId] = useState(existingAppointment?.client_id ?? initialClientId);
 
@@ -135,6 +129,7 @@ export default function AppointmentForm({
           scheduled_at: scheduledAt,
           status,
           duration_minutes: Number(durationMinutes),
+          duration_overridden: isDurationOverridden,
           service_ids: selectedServiceIds.map(Number),
         },
       }),
@@ -237,6 +232,7 @@ export default function AppointmentForm({
       {error && <p className="error">{error}</p>}
 
       <label htmlFor="client">Client</label>
+
       <select id="client" value={clientId} onChange={(event) => setClientId(event.target.value)}>
         <option value="">Select a client</option>
 
@@ -252,15 +248,19 @@ export default function AppointmentForm({
       {isNewClient && (
         <div>
           <label htmlFor="first_name">First Name</label>
+
           <input id="first_name" name="first_name" value={newClient.first_name} onChange={handleNewClientChange} />
 
           <label htmlFor="last_name">Last Name</label>
+
           <input id="last_name" name="last_name" value={newClient.last_name} onChange={handleNewClientChange} />
 
           <label htmlFor="email">Email</label>
+
           <input id="email" name="email" type="email" value={newClient.email} onChange={handleNewClientChange} />
 
           <label htmlFor="phone">Phone</label>
+
           <input id="phone" name="phone" value={newClient.phone} onChange={handleNewClientChange} />
         </div>
       )}
@@ -281,6 +281,7 @@ export default function AppointmentForm({
       {selectedServiceIds.length > 0 && <p>Service total: {selectedServiceDurationTotal} minutes</p>}
 
       <label htmlFor="scheduled_at">Scheduled At</label>
+
       <input
         id="scheduled_at"
         type="datetime-local"
@@ -289,6 +290,7 @@ export default function AppointmentForm({
       />
 
       <label htmlFor="resource">Resource</label>
+
       <select id="resource" value={resourceId} onChange={(event) => setResourceId(event.target.value)}>
         <option value="">Select a resource</option>
 
@@ -300,6 +302,7 @@ export default function AppointmentForm({
       </select>
 
       <label htmlFor="duration_minutes">Duration Minutes</label>
+
       <input
         id="duration_minutes"
         type="number"
@@ -323,6 +326,7 @@ export default function AppointmentForm({
       {isEditing && (
         <>
           <label htmlFor="status">Status</label>
+
           <select id="status" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="scheduled">Scheduled</option>
             <option value="completed">Completed</option>
@@ -332,6 +336,7 @@ export default function AppointmentForm({
       )}
 
       <button type="submit">{isEditing ? "Update Appointment" : "Create Appointment"}</button>
+
       <button type="button" onClick={handleCancel}>
         Cancel
       </button>
