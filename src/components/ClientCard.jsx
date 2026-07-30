@@ -135,6 +135,10 @@ export default function ClientCard({ currentUser }) {
     fetchClient();
   }
 
+  function handleCancelAppointmentEdit() {
+    setEditingAppointment(null);
+  }
+
   return (
     <section className="client-card">
       {errorMessage && <p className="error">{errorMessage}</p>}
@@ -228,9 +232,11 @@ export default function ClientCard({ currentUser }) {
 
       {editingAppointment && (
         <AppointmentForm
+          key={editingAppointment.id}
           currentUser={currentUser}
           existingAppointment={editingAppointment}
           onAppointmentUpdated={handleAppointmentUpdated}
+          onCancel={handleCancelAppointmentEdit}
         />
       )}
 
