@@ -221,7 +221,7 @@ export default function AppointmentForm({
         navigate(`/clients/${clientId}`);
       })
       .catch((requestError) => {
-        setError(requestError.message);
+        setError(requestError.validationErrors?.[0]?.message || requestError.validationErrors?.[0]?.message || requestError.message);
       });
   }
 
