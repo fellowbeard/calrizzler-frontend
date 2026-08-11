@@ -97,6 +97,7 @@ export default function AppointmentCalendar({ appointments = [], currentUser = n
                       <div>
                         {appointment.client.first_name} {appointment.client.last_name}
                       </div>
+                      <div>{appointment.resource?.name}</div>
                       <div>
                         {appointment.services?.length > 0
                           ? appointment.services.map((service) => service.title).join(", ")
