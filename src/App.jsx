@@ -1,6 +1,6 @@
 import "./App.css";
 import { Routes, Route, Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import UserDashboard from "./components/UserDashboard.jsx";
 import Login from "./components/Login.jsx";
@@ -8,16 +8,75 @@ import LogOut from "./components/LogOut.jsx";
 import ClientCard from "./components/ClientCard.jsx";
 import NewClient from "./components/forms/NewClient.jsx";
 import NewAppointment from "./components/forms/NewAppointment.jsx";
+import AccountSettings from "./components/AccountSettings.jsx";
+
+import { apiFetch } from "./utils/api.js";
+import { getToken, removeToken } from "./utils/auth.js";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentAccount, setCurrentAccount] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  const isOwner = currentUser?.role === "owner";
+
+  useEffect(() => {
+    const token = getToken();
+
+    if (!token) {
+      setIsAuthLoading(false);
+      return;
+    }
+
+    apiFetch("/api/v1/me")
+      .then((user) => {
+        setCurrentUser(user);
+      })
+      .catch(() => {
+        removeToken();
+        setCurrentUser(null);
+        setCurrentAccount(null);
+      })
+      .finally(() => {
+        setIsAuthLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setCurrentAccount(null);
+      return;
+    }
+
+    apiFetch("/api/v1/account")
+      .then((account) => {
+        setCurrentAccount(account);
+      })
+      .catch(() => {
+        setCurrentAccount(null);
+      });
+  }, [currentUser]);
+
+  if (isAuthLoading) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <>
       <nav>
         {currentUser ? (
           <>
-            <Link to="/userdashboard">Dashboard</Link> | <LogOut setCurrentUser={setCurrentUser} />
+            <Link to="/userdashboard">Dashboard</Link>
+
+            {isOwner && (
+              <>
+                {" | "}
+                <Link to="/account/settings">Account Settings</Link>
+              </>
+            )}
+
+            {" | "}
+            <LogOut setCurrentUser={setCurrentUser} />
           </>
         ) : (
           <Link to="/">Login</Link>
@@ -25,26 +84,77 @@ function App() {
       </nav>
 
       <Routes>
-        <Route path="/" element={<Login setCurrentUser={setCurrentUser} />} />
+        <Route
+          path="/"
+          element={<Login setCurrentUser={setCurrentUser} />}
+        />
 
         <Route
           path="/userdashboard"
-          element={currentUser ? <UserDashboard currentUser={currentUser} /> : <p>LOGIN You dork</p>}
+          element={
+            currentUser ? (
+              <UserDashboard
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
+            ) : (
+              <p>Please log in first.</p>
+            )
+          }
         />
 
         <Route
           path="/clients/:id"
-          element={currentUser ? <ClientCard currentUser={currentUser} /> : <p>Please log in first.</p>}
+          element={
+            currentUser ? (
+              <ClientCard
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
+            ) : (
+              <p>Please log in first.</p>
+            )
+          }
         />
 
         <Route
           path="/clients/new"
-          element={currentUser ? <NewClient currentUser={currentUser} /> : <p>Please log in first.</p>}
+          element={
+            currentUser ? (
+              <NewClient currentUser={currentUser} />
+            ) : (
+              <p>Please log in first.</p>
+            )
+          }
         />
 
         <Route
           path="/appointments/new"
-          element={currentUser ? <NewAppointment currentUser={currentUser} /> : <p>LOGIN You dork</p>}
+          element={
+            currentUser ? (
+              <NewAppointment
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
+            ) : (
+              <p>Please log in first.</p>
+            )
+          }
+        />
+
+        <Route
+          path="/account/settings"
+          element={
+            currentUser ? (
+              <AccountSettings
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+                setCurrentAccount={setCurrentAccount}
+              />
+            ) : (
+              <p>Please log in first.</p>
+            )
+          }
         />
       </Routes>
     </>

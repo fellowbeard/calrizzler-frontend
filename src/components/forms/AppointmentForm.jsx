@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/api.js";
+import { toDateTimeLocalValue } from "../../utils/timezone.js";
 
 export default function AppointmentForm({
   currentUser,
+  currentAccount,
   initialClientId = "",
   existingAppointment = null,
   onAppointmentUpdated,
@@ -27,7 +29,7 @@ export default function AppointmentForm({
   const [clients, setClients] = useState([]);
   const [clientId, setClientId] = useState(existingAppointment?.client_id ?? initialClientId);
 
-  const [scheduledAt, setScheduledAt] = useState(existingAppointment?.scheduled_at ?? "");
+  const [scheduledAt, setScheduledAt] = useState("");
 
   const [status, setStatus] = useState(existingAppointment?.status ?? "scheduled");
 
@@ -48,6 +50,19 @@ export default function AppointmentForm({
     (total, service) => total + Number(service.duration_minutes ?? 0),
     0
   );
+
+  useEffect(() => {
+    if (!existingAppointment || !currentAccount?.timezone) {
+      return;
+    }
+
+    setScheduledAt(
+      toDateTimeLocalValue(
+        existingAppointment.scheduled_at,
+        currentAccount.timezone
+      )
+    );
+  }, [existingAppointment, currentAccount]);
 
   useEffect(() => {
     apiFetch("/api/v1/dashboard")
