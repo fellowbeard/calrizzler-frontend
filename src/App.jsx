@@ -1,6 +1,6 @@
 import "./App.css";
 import { Routes, Route, Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import UserDashboard from "./components/UserDashboard.jsx";
 import Login from "./components/Login.jsx";
@@ -10,10 +10,56 @@ import NewClient from "./components/forms/NewClient.jsx";
 import NewAppointment from "./components/forms/NewAppointment.jsx";
 import AccountSettings from "./components/AccountSettings.jsx";
 
+import { apiFetch } from "./utils/api.js";
+import { getToken, removeToken } from "./utils/auth.js";
+
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentAccount, setCurrentAccount] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const isOwner = currentUser?.role === "owner";
+
+  useEffect(() => {
+    const token = getToken();
+
+    if (!token) {
+      setIsAuthLoading(false);
+      return;
+    }
+
+    apiFetch("/api/v1/me")
+      .then((user) => {
+        setCurrentUser(user);
+      })
+      .catch(() => {
+        removeToken();
+        setCurrentUser(null);
+        setCurrentAccount(null);
+      })
+      .finally(() => {
+        setIsAuthLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setCurrentAccount(null);
+      return;
+    }
+
+    apiFetch("/api/v1/account")
+      .then((account) => {
+        setCurrentAccount(account);
+      })
+      .catch(() => {
+        setCurrentAccount(null);
+      });
+  }, [currentUser]);
+
+  if (isAuthLoading) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <>
@@ -47,9 +93,12 @@ function App() {
           path="/userdashboard"
           element={
             currentUser ? (
-              <UserDashboard currentUser={currentUser} />
+              <UserDashboard
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
             ) : (
-              <p>LOGIN You dork</p>
+              <p>Please log in first.</p>
             )
           }
         />
@@ -58,7 +107,10 @@ function App() {
           path="/clients/:id"
           element={
             currentUser ? (
-              <ClientCard currentUser={currentUser} />
+              <ClientCard
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
             ) : (
               <p>Please log in first.</p>
             )
@@ -80,9 +132,12 @@ function App() {
           path="/appointments/new"
           element={
             currentUser ? (
-              <NewAppointment currentUser={currentUser} />
+              <NewAppointment
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
             ) : (
-              <p>LOGIN You dork</p>
+              <p>Please log in first.</p>
             )
           }
         />
@@ -91,7 +146,11 @@ function App() {
           path="/account/settings"
           element={
             currentUser ? (
-              <AccountSettings currentUser={currentUser} />
+              <AccountSettings
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+                setCurrentAccount={setCurrentAccount}
+              />
             ) : (
               <p>Please log in first.</p>
             )

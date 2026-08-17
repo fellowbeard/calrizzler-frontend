@@ -1,7 +1,16 @@
 import { useState } from "react";
 import AppointmentForm from "./forms/AppointmentForm.jsx";
+import {
+  datePartsInTimezone,
+  formatTimeInTimezone,
+} from "../utils/timezone.js";
 
-export default function AppointmentCalendar({ appointments = [], currentUser = null, onAppointmentUpdate = null }) {
+  export default function AppointmentCalendar({
+    appointments = [],
+    currentUser = null,
+    currentAccount = null,
+    onAppointmentUpdate = null,
+  }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingAppointment, setEditingAppointment] = useState(null);
 
@@ -33,15 +42,20 @@ export default function AppointmentCalendar({ appointments = [], currentUser = n
   }
 
   function appointmentsForDay(dayDate) {
-    if (!dayDate) return [];
+    if (!dayDate || !currentAccount?.timezone) {
+      return [];
+    }
 
     return appointments.filter((appointment) => {
-      const appointmentDate = new Date(appointment.scheduled_at);
+      const appointmentDate = datePartsInTimezone(
+        appointment.scheduled_at,
+        currentAccount.timezone
+      );
 
       return (
-        appointmentDate.getFullYear() === dayDate.getFullYear() &&
-        appointmentDate.getMonth() === dayDate.getMonth() &&
-        appointmentDate.getDate() === dayDate.getDate()
+        appointmentDate.year === dayDate.getFullYear() &&
+        appointmentDate.month === dayDate.getMonth() + 1 &&
+        appointmentDate.day === dayDate.getDate()
       );
     });
   }
@@ -89,10 +103,10 @@ export default function AppointmentCalendar({ appointments = [], currentUser = n
                       onClick={() => setEditingAppointment(appointment)}
                     >
                       <span>
-                        {new Date(appointment.scheduled_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatTimeInTimezone(
+                          appointment.scheduled_at,
+                          currentAccount?.timezone
+                        )}
                       </span>
                       <div>
                         {appointment.client.first_name} {appointment.client.last_name}
@@ -120,6 +134,7 @@ export default function AppointmentCalendar({ appointments = [], currentUser = n
             </button>
             <AppointmentForm
               currentUser={currentUser}
+              currentAccount={currentAccount}
               existingAppointment={editingAppointment}
               onAppointmentUpdated={() => {
                 setEditingAppointment(null);

@@ -23,7 +23,7 @@ function getTimezones() {
   return FALLBACK_TIMEZONES;
 }
 
-export default function AccountSettings({ currentUser }) {
+export default function AccountSettings({ currentUser, setCurentAccount }) {
   const [businessName, setBusinessName] = useState("");
   const [timezone, setTimezone] = useState("");
   const [error, setError] = useState("");
@@ -67,6 +67,7 @@ export default function AccountSettings({ currentUser }) {
       .then((account) => {
         setBusinessName(account.business_name);
         setTimezone(account.timezone);
+        setCurrentAccount(account);
         setSuccessMessage("Account settings updated.");
       })
       .catch((requestError) => {

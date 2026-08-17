@@ -5,7 +5,7 @@ import ServiceForm from "./forms/ServiceForm.jsx";
 import ResourceForm from "./forms/ResourceForm.jsx";
 import AppointmentCalendar from "./AppointmentCalendar.jsx";
 
-export default function UserDashboard({ currentUser }) {
+export default function UserDashboard({ currentUser, currentAccount }) {
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -223,6 +223,7 @@ export default function UserDashboard({ currentUser }) {
       <AppointmentCalendar
         appointments={dashboard.appointments || []}
         currentUser={currentUser}
+        currentAccount={currentAccount}
         onAppointmentUpdate={fetchDashboard}
       />
     </main>

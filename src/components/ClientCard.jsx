@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppointmentForm from "./forms/AppointmentForm.jsx";
 import { apiFetch } from "../utils/api.js";
+import { formatDateTimeInTimezone } from "../utils/timezone.js";
 
-export default function ClientCard({ currentUser }) {
+export default function ClientCard({ currentUser, currentAccount, }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -200,14 +201,10 @@ export default function ClientCard({ currentUser }) {
                 >
                   <div className="appointment-meta">
                     <strong>
-                      {new Date(appointment.scheduled_at).toLocaleString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatDateTimeInTimezone(
+                        appointment.scheduled_at,
+                        currentAccount?.timezone
+                      )}
                     </strong>
 
                     <div>Total appointment duration: {appointment.duration_minutes} minutes</div>
@@ -248,6 +245,7 @@ export default function ClientCard({ currentUser }) {
         <AppointmentForm
           key={editingAppointment.id}
           currentUser={currentUser}
+          currentAccount={currentAccount}
           existingAppointment={editingAppointment}
           onAppointmentUpdated={handleAppointmentUpdated}
           onCancel={handleCancelAppointmentEdit}
