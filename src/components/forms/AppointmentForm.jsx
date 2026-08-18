@@ -29,7 +29,13 @@ export default function AppointmentForm({
   const [clients, setClients] = useState([]);
   const [clientId, setClientId] = useState(existingAppointment?.client_id ?? initialClientId);
 
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [scheduledAt, setScheduledAt] = useState(() => {
+    if (!existingAppointment?.scheduled_at || !currentAccount?.timezone) {
+      return "";
+    }
+
+    return toDateTimeLocalValue(existingAppointment.scheduled_at, currentAccount.timezone);
+  });
 
   const [status, setStatus] = useState(existingAppointment?.status ?? "scheduled");
 
@@ -50,19 +56,6 @@ export default function AppointmentForm({
     (total, service) => total + Number(service.duration_minutes ?? 0),
     0
   );
-
-  useEffect(() => {
-    if (!existingAppointment || !currentAccount?.timezone) {
-      return;
-    }
-
-    setScheduledAt(
-      toDateTimeLocalValue(
-        existingAppointment.scheduled_at,
-        currentAccount.timezone
-      )
-    );
-  }, [existingAppointment, currentAccount]);
 
   useEffect(() => {
     apiFetch("/api/v1/dashboard")
@@ -236,7 +229,11 @@ export default function AppointmentForm({
         navigate(`/clients/${clientId}`);
       })
       .catch((requestError) => {
-        setError(requestError.validationErrors?.[0]?.message || requestError.validationErrors?.[0]?.message || requestError.message);
+        setError(
+          requestError.validationErrors?.[0]?.message ||
+            requestError.validationErrors?.[0]?.message ||
+            requestError.message
+        );
       });
   }
 
@@ -316,7 +313,7 @@ export default function AppointmentForm({
         ))}
       </select>
 
-      <label htmlFor="duration_minutes">Duration Minutes</label>
+      <label htmlFor="duration_minutes">Total Appointment Duration</label>
 
       <input
         id="duration_minutes"
@@ -325,7 +322,7 @@ export default function AppointmentForm({
         step="1"
         value={durationMinutes}
         onChange={handleDurationChange}
-        placeholder="Select a service to calculate duration"
+        placeholder="Total time in minutes"
       />
 
       {isDurationOverridden && (

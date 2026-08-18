@@ -1,3 +1,27 @@
+export const TIMEZONE_OPTIONS = [
+  { value: "America/New_York", label: "Eastern Time (EST)" },
+  { value: "America/Chicago", label: "Central Time (CST)" },
+  { value: "America/Denver", label: "Mountain Time (MST)" },
+  { value: "America/Los_Angeles", label: "Pacific Time (PST)" },
+  { value: "America/Phoenix", label: "Arizona Time (MST)" },
+  { value: "America/Anchorage", label: "Alaska Time (AKST)" },
+  { value: "Pacific/Honolulu", label: "Hawaii Time (HST)" },
+];
+
+const TIMEZONE_ABBREVIATIONS = {
+  "America/New_York": "EST",
+  "America/Chicago": "CST",
+  "America/Denver": "MST",
+  "America/Los_Angeles": "PST",
+  "America/Phoenix": "MST",
+  "Pacific/Honolulu": "HST",
+  "America/Anchorage": "AKST",
+};
+
+export function timezoneAbbreviation(timezone) {
+  return TIMEZONE_ABBREVIATIONS[timezone] ?? timezone;
+}
+
 export function formatDateTimeInTimezone(dateTime, timezone) {
   if (!dateTime || !timezone) {
     return "";
@@ -77,4 +101,14 @@ export function toDateTimeLocalValue(dateTime, timezone) {
   });
 
   return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
+}
+
+export function calculateEndTime(dateTime, durationMinutes) {
+  if (!dateTime) {
+    return null;
+  }
+
+  const start = new Date(dateTime);
+
+  return new Date(start.getTime() + Number(durationMinutes ?? 0) * 60 * 1000);
 }

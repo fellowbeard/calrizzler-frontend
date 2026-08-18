@@ -1,16 +1,18 @@
 import { useState } from "react";
 import AppointmentForm from "./forms/AppointmentForm.jsx";
 import {
+  calculateEndTime,
   datePartsInTimezone,
   formatTimeInTimezone,
+  timezoneAbbreviation,
 } from "../utils/timezone.js";
 
-  export default function AppointmentCalendar({
-    appointments = [],
-    currentUser = null,
-    currentAccount = null,
-    onAppointmentUpdate = null,
-  }) {
+export default function AppointmentCalendar({
+  appointments = [],
+  currentUser = null,
+  currentAccount = null,
+  onAppointmentUpdate = null,
+}) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingAppointment, setEditingAppointment] = useState(null);
 
@@ -47,10 +49,7 @@ import {
     }
 
     return appointments.filter((appointment) => {
-      const appointmentDate = datePartsInTimezone(
-        appointment.scheduled_at,
-        currentAccount.timezone
-      );
+      const appointmentDate = datePartsInTimezone(appointment.scheduled_at, currentAccount.timezone);
 
       return (
         appointmentDate.year === dayDate.getFullYear() &&
@@ -95,30 +94,38 @@ import {
                 <>
                   <strong>{dayDate.getDate()}</strong>
 
-                  {dayAppointments.map((appointment) => (
-                    <button
-                      key={appointment.id}
-                      type="button"
-                      className="calendar-appointment"
-                      onClick={() => setEditingAppointment(appointment)}
-                    >
-                      <span>
-                        {formatTimeInTimezone(
-                          appointment.scheduled_at,
-                          currentAccount?.timezone
-                        )}
-                      </span>
-                      <div>
-                        {appointment.client.first_name} {appointment.client.last_name}
-                      </div>
-                      <div>{appointment.resource?.name}</div>
-                      <div>
-                        {appointment.services?.length > 0
-                          ? appointment.services.map((service) => service.title).join(", ")
-                          : "Appointment"}
-                      </div>
-                    </button>
-                  ))}
+                  {dayAppointments.map((appointment) => {
+                    const endTime = calculateEndTime(appointment.scheduled_at, appointment.duration_minutes);
+
+                    const timezoneLabel = timezoneAbbreviation(currentAccount.timezone);
+
+                    return (
+                      <button
+                        key={appointment.id}
+                        type="button"
+                        className="calendar-appointment"
+                        onClick={() => setEditingAppointment(appointment)}
+                      >
+                        <span>
+                          {formatTimeInTimezone(appointment.scheduled_at, currentAccount.timezone)}
+                          {" - "}
+                          {formatTimeInTimezone(endTime.toISOString(), currentAccount.timezone)} {timezoneLabel}
+                        </span>
+
+                        <div>
+                          {appointment.client.first_name} {appointment.client.last_name}
+                        </div>
+
+                        <div>{appointment.resource?.name}</div>
+
+                        <div>
+                          {appointment.services?.length > 0
+                            ? appointment.services.map((service) => service.title).join(", ")
+                            : "Appointment"}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </>
               )}
             </div>
