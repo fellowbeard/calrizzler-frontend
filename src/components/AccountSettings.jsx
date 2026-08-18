@@ -1,37 +1,14 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api.js";
+import { TIMEZONE_OPTIONS } from "../utils/timezone.js";
 
-const FALLBACK_TIMEZONES = [
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Phoenix",
-  "America/Los_Angeles",
-  "America/Anchorage",
-  "Pacific/Honolulu",
-];
-
-function getTimezones() {
-  if (typeof Intl.supportedValuesOf === "function") {
-    return Intl.supportedValuesOf("timeZone").filter(
-      (timezone) =>
-        timezone.startsWith("America/") ||
-        timezone.startsWith("Pacific/")
-    );
-  }
-
-  return FALLBACK_TIMEZONES;
-}
-
-export default function AccountSettings({ currentUser, setCurentAccount }) {
+export default function AccountSettings({ currentUser, setCurrentAccount }) {
   const [businessName, setBusinessName] = useState("");
   const [timezone, setTimezone] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  const timezones = getTimezones();
 
   useEffect(() => {
     apiFetch("/api/v1/account")
@@ -71,10 +48,7 @@ export default function AccountSettings({ currentUser, setCurentAccount }) {
         setSuccessMessage("Account settings updated.");
       })
       .catch((requestError) => {
-        setError(
-          requestError.validationErrors?.[0]?.message ||
-            requestError.message
-        );
+        setError(requestError.validationErrors?.[0]?.message || requestError.message);
       })
       .finally(() => {
         setIsSaving(false);
@@ -121,23 +95,16 @@ export default function AccountSettings({ currentUser, setCurentAccount }) {
         <div>
           <label htmlFor="timezone">Timezone</label>
 
-          <select
-            id="timezone"
-            name="timezone"
-            value={timezone}
-            onChange={(event) => setTimezone(event.target.value)}
-          >
-            {timezones.map((timezoneOption) => (
-              <option key={timezoneOption} value={timezoneOption}>
-                {timezoneOption}
+          <select id="timezone" name="timezone" value={timezone} onChange={(event) => setTimezone(event.target.value)}>
+            {TIMEZONE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </div>
 
-        <button type="submit">
-          {isSaving ? "Saving..." : "Save Settings"}
-        </button>
+        <button type="submit">{isSaving ? "Saving..." : "Save Settings"}</button>
       </form>
     </main>
   );
