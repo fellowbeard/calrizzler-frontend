@@ -1,12 +1,13 @@
 import { removeToken } from "../utils/auth.js";
 import { useNavigate } from "react-router-dom";
 
-export default function LogOut({ setCurrentUser }) {
+export default function LogOut({ setCurrentUser, setCurrentAccount }) {
   const navigate = useNavigate();
 
   function handleLogout() {
     removeToken();
     setCurrentUser(null);
+    setCurrentAccount(null);
     navigate("/");
   }
 

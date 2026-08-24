@@ -16,17 +16,14 @@ import { getToken, removeToken } from "./utils/auth.js";
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentAccount, setCurrentAccount] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(() => Boolean(getToken()));
 
   const isOwner = currentUser?.role === "owner";
 
   useEffect(() => {
     const token = getToken();
 
-    if (!token) {
-      setIsAuthLoading(false);
-      return;
-    }
+    if (!token) return;
 
     apiFetch("/api/v1/me")
       .then((user) => {
@@ -43,10 +40,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!currentUser) {
-      setCurrentAccount(null);
-      return;
-    }
+    if (!currentUser) return;
 
     apiFetch("/api/v1/account")
       .then((account) => {
@@ -63,40 +57,30 @@ function App() {
 
   return (
     <>
-      <nav>
-        {currentUser ? (
-          <>
-            <Link to="/userdashboard">Dashboard</Link>
+      {currentUser && (
+        <nav>
+          <Link to="/userdashboard">Dashboard</Link>
 
-            {isOwner && (
-              <>
-                {" | "}
-                <Link to="/account/settings">Account Settings</Link>
-              </>
-            )}
+          {isOwner && (
+            <>
+              {" | "}
+              <Link to="/account/settings">Account Settings</Link>
+            </>
+          )}
 
-            {" | "}
-            <LogOut setCurrentUser={setCurrentUser} />
-          </>
-        ) : (
-          <Link to="/">Login</Link>
-        )}
-      </nav>
+          {" | "}
+          <LogOut setCurrentUser={setCurrentUser} setCurrentAccount={setCurrentAccount} />
+        </nav>
+      )}
 
       <Routes>
-        <Route
-          path="/"
-          element={<Login setCurrentUser={setCurrentUser} />}
-        />
+        <Route path="/" element={<Login setCurrentUser={setCurrentUser} />} />
 
         <Route
           path="/userdashboard"
           element={
             currentUser ? (
-              <UserDashboard
-                currentUser={currentUser}
-                currentAccount={currentAccount}
-              />
+              <UserDashboard currentUser={currentUser} currentAccount={currentAccount} />
             ) : (
               <p>Please log in first.</p>
             )
@@ -107,10 +91,7 @@ function App() {
           path="/clients/:id"
           element={
             currentUser ? (
-              <ClientCard
-                currentUser={currentUser}
-                currentAccount={currentAccount}
-              />
+              <ClientCard currentUser={currentUser} currentAccount={currentAccount} />
             ) : (
               <p>Please log in first.</p>
             )
@@ -119,23 +100,14 @@ function App() {
 
         <Route
           path="/clients/new"
-          element={
-            currentUser ? (
-              <NewClient currentUser={currentUser} />
-            ) : (
-              <p>Please log in first.</p>
-            )
-          }
+          element={currentUser ? <NewClient currentUser={currentUser} /> : <p>Please log in first.</p>}
         />
 
         <Route
           path="/appointments/new"
           element={
             currentUser ? (
-              <NewAppointment
-                currentUser={currentUser}
-                currentAccount={currentAccount}
-              />
+              <NewAppointment currentUser={currentUser} currentAccount={currentAccount} />
             ) : (
               <p>Please log in first.</p>
             )
@@ -145,14 +117,14 @@ function App() {
         <Route
           path="/account/settings"
           element={
-            currentUser ? (
+            currentUser && isOwner ? (
               <AccountSettings
                 currentUser={currentUser}
                 currentAccount={currentAccount}
                 setCurrentAccount={setCurrentAccount}
               />
             ) : (
-              <p>Please log in first.</p>
+              <p>You do not have permission to access account settings.</p>
             )
           }
         />
