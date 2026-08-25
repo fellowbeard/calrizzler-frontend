@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api.js";
 import { TIMEZONE_OPTIONS } from "../utils/timezone.js";
+import InviteUser from "./InviteUser.jsx";
 
 export default function AccountSettings({ currentUser, setCurrentAccount }) {
   const [businessName, setBusinessName] = useState("");
@@ -106,6 +107,7 @@ export default function AccountSettings({ currentUser, setCurrentAccount }) {
 
         <button type="submit">{isSaving ? "Saving..." : "Save Settings"}</button>
       </form>
+      <InviteUser />
     </main>
   );
 }
