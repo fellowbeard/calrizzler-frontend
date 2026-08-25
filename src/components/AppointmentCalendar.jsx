@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { apiFetch } from "../utils/api.js";
 import AppointmentForm from "./forms/AppointmentForm.jsx";
 import {
   calculateEndTime,
@@ -7,17 +9,29 @@ import {
   timezoneAbbreviation,
 } from "../utils/timezone.js";
 
-export default function AppointmentCalendar({
-  appointments = [],
-  currentUser = null,
-  currentAccount = null,
-  onAppointmentUpdate = null,
-}) {
+export default function AppointmentCalendar({ currentUser = null, currentAccount = null, onAppointmentUpdate = null }) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [appointments, setAppointments] = useState([]);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  const [error, setError] = useState("");
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  const fetchCalendar = useCallback(() => {
+    apiFetch("/api/v1/calendar")
+      .then((data) => {
+        setAppointments(data);
+        setError("");
+      })
+      .catch((requestError) => {
+        setError(requestError.message);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetchCalendar();
+  }, [fetchCalendar]);
 
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
@@ -59,8 +73,71 @@ export default function AppointmentCalendar({
     });
   }
 
+  function isOwnAppointment(appointment) {
+    return appointment.user_id === currentUser?.id;
+  }
+
+  async function handleAppointmentClick(appointment) {
+    if (!isOwnAppointment(appointment)) {
+      return;
+    }
+
+    try {
+      const fullAppointment = await apiFetch(`/api/v1/appointments/${appointment.id}`);
+
+      setEditingAppointment(fullAppointment);
+      setError("");
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  function renderAppointment(appointment) {
+    const ownAppointment = isOwnAppointment(appointment);
+
+    const endTime = calculateEndTime(appointment.scheduled_at, appointment.duration_minutes);
+
+    const timezoneLabel = timezoneAbbreviation(currentAccount.timezone);
+
+    const appointmentContent = (
+      <>
+        <span>
+          {formatTimeInTimezone(appointment.scheduled_at, currentAccount.timezone)}
+          {" - "}
+          {formatTimeInTimezone(endTime.toISOString(), currentAccount.timezone)} {timezoneLabel}
+        </span>
+
+        <div>{appointment.user_name}</div>
+        <div>{appointment.resource_name}</div>
+
+        {!ownAppointment && <div>Busy</div>}
+      </>
+    );
+
+    if (ownAppointment) {
+      return (
+        <button
+          key={appointment.id}
+          type="button"
+          className="calendar-appointment"
+          onClick={() => handleAppointmentClick(appointment)}
+        >
+          {appointmentContent}
+        </button>
+      );
+    }
+
+    return (
+      <div key={appointment.id} className="calendar-appointment">
+        {appointmentContent}
+      </div>
+    );
+  }
+
   return (
     <section className="appointment-calendar">
+      {error && <p className="error">{error}</p>}
+
       <div className="calendar-header">
         <button onClick={previousMonth}>Previous</button>
 
@@ -94,38 +171,7 @@ export default function AppointmentCalendar({
                 <>
                   <strong>{dayDate.getDate()}</strong>
 
-                  {dayAppointments.map((appointment) => {
-                    const endTime = calculateEndTime(appointment.scheduled_at, appointment.duration_minutes);
-
-                    const timezoneLabel = timezoneAbbreviation(currentAccount.timezone);
-
-                    return (
-                      <button
-                        key={appointment.id}
-                        type="button"
-                        className="calendar-appointment"
-                        onClick={() => setEditingAppointment(appointment)}
-                      >
-                        <span>
-                          {formatTimeInTimezone(appointment.scheduled_at, currentAccount.timezone)}
-                          {" - "}
-                          {formatTimeInTimezone(endTime.toISOString(), currentAccount.timezone)} {timezoneLabel}
-                        </span>
-
-                        <div>
-                          {appointment.client.first_name} {appointment.client.last_name}
-                        </div>
-
-                        <div>{appointment.resource?.name}</div>
-
-                        <div>
-                          {appointment.services?.length > 0
-                            ? appointment.services.map((service) => service.title).join(", ")
-                            : "Appointment"}
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {dayAppointments.map(renderAppointment)}
                 </>
               )}
             </div>
@@ -139,12 +185,14 @@ export default function AppointmentCalendar({
             <button className="close-button" onClick={() => setEditingAppointment(null)}>
               ✕
             </button>
+
             <AppointmentForm
               currentUser={currentUser}
               currentAccount={currentAccount}
               existingAppointment={editingAppointment}
               onAppointmentUpdated={() => {
                 setEditingAppointment(null);
+                fetchCalendar();
                 onAppointmentUpdate?.();
               }}
             />

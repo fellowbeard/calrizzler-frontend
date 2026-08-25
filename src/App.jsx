@@ -1,5 +1,5 @@
 import "./App.css";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import UserDashboard from "./components/UserDashboard.jsx";
@@ -12,6 +12,7 @@ import AccountSettings from "./components/AccountSettings.jsx";
 
 import { apiFetch } from "./utils/api.js";
 import { getToken, removeToken } from "./utils/auth.js";
+import AcceptInvitation from "./components/AcceptInvitation.jsx";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -19,6 +20,8 @@ function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(() => Boolean(getToken()));
 
   const isOwner = currentUser?.role === "owner";
+  const location = useLocation();
+  const isPublicAuthPage = location.pathname === "/" || location.pathname === "/accept-invitation";
 
   useEffect(() => {
     const token = getToken();
@@ -57,7 +60,7 @@ function App() {
 
   return (
     <>
-      {currentUser && (
+      {currentUser && !isPublicAuthPage && (
         <nav>
           <Link to="/userdashboard">Dashboard</Link>
 
@@ -128,6 +131,7 @@ function App() {
             )
           }
         />
+        <Route path="/accept-invitation" element={<AcceptInvitation />} />
       </Routes>
     </>
   );
