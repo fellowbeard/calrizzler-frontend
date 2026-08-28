@@ -3,8 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import AppointmentForm from "./forms/AppointmentForm.jsx";
 import { apiFetch } from "../utils/api.js";
 import { formatDateTimeInTimezone } from "../utils/timezone.js";
+import { formatDuration } from "@/utils/durationFormatting";
 
-export default function ClientCard({ currentUser, currentAccount, }) {
+export default function ClientCard({ currentUser, currentAccount }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -200,18 +201,14 @@ export default function ClientCard({ currentUser, currentAccount, }) {
                   onClick={() => setEditingAppointment(appointment)}
                 >
                   <div className="appointment-meta">
-                    <strong>
-                      {formatDateTimeInTimezone(
-                        appointment.scheduled_at,
-                        currentAccount?.timezone
-                      )}
-                    </strong>
+                    <strong>{formatDateTimeInTimezone(appointment.scheduled_at, currentAccount?.timezone)}</strong>
 
-                    <div>Total appointment duration: {appointment.duration_minutes} minutes</div>
+                    <div>Total appointment duration: {formatDuration(Number(appointment.duration_minutes))}</div>
 
                     {appointment.duration_overridden && (
                       <div className="duration-override">
-                        Manually overridden from the current service total of {serviceDurationTotal} minutes
+                        Manually overridden from the current service total of {formatDuration(serviceDurationTotal)}{" "}
+                        minutes
                       </div>
                     )}
                   </div>
