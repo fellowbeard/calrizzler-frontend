@@ -52,7 +52,7 @@ export default function UserDashboard({ currentUser, currentAccount }) {
   return (
     <main>
       {errorMessage && <p className="error">{errorMessage}</p>}
-      <h1>{dashboard.account?.business_name} Dashboard</h1>
+      <h1>{dashboard.account?.business_name}</h1>
 
       <h2>
         Welcome, {dashboard.user?.first_name} {dashboard.user?.last_name}

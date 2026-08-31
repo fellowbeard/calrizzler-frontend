@@ -4,7 +4,7 @@ import AppointmentForm from "./forms/AppointmentForm.jsx";
 import { apiFetch } from "../utils/api.js";
 import { formatDateTimeInTimezone } from "../utils/timezone.js";
 
-export default function ClientCard({ currentUser, currentAccount, }) {
+export default function ClientCard({ currentUser, currentAccount }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -200,12 +200,7 @@ export default function ClientCard({ currentUser, currentAccount, }) {
                   onClick={() => setEditingAppointment(appointment)}
                 >
                   <div className="appointment-meta">
-                    <strong>
-                      {formatDateTimeInTimezone(
-                        appointment.scheduled_at,
-                        currentAccount?.timezone
-                      )}
-                    </strong>
+                    <strong>{formatDateTimeInTimezone(appointment.scheduled_at, currentAccount?.timezone)}</strong>
 
                     <div>Total appointment duration: {appointment.duration_minutes} minutes</div>
 
