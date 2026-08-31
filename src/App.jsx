@@ -22,6 +22,7 @@ function App() {
   const isOwner = currentUser?.role === "owner";
   const location = useLocation();
   const isPublicAuthPage = location.pathname === "/" || location.pathname === "/accept-invitation";
+  const isDashboardPage = location.pathname === "/userdashboard";
 
   useEffect(() => {
     const token = getToken();
@@ -62,16 +63,18 @@ function App() {
     <>
       {currentUser && !isPublicAuthPage && (
         <nav>
-          <Link to="/userdashboard">Dashboard</Link>
+          {!isDashboardPage && (
+            <>
+              <Link to="/userdashboard">Dashboard</Link>
+            </>
+          )}
 
           {isOwner && (
             <>
-              {" | "}
               <Link to="/account/settings">Account Settings</Link>
             </>
           )}
 
-          {" | "}
           <LogOut setCurrentUser={setCurrentUser} setCurrentAccount={setCurrentAccount} />
         </nav>
       )}
