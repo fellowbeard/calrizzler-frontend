@@ -9,7 +9,11 @@ import {
   timezoneAbbreviation,
 } from "../utils/timezone.js";
 
-export default function AppointmentCalendar({ currentUser = null, currentAccount = null, onAppointmentUpdate = null }) {
+export default function AppointmentCalendar({
+  currentUser = null,
+  currentAccount = null,
+  onAppointmentUpdate = null,
+}) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [editingAppointment, setEditingAppointment] = useState(null);
@@ -63,7 +67,10 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
     }
 
     return appointments.filter((appointment) => {
-      const appointmentDate = datePartsInTimezone(appointment.scheduled_at, currentAccount.timezone);
+      const appointmentDate = datePartsInTimezone(
+        appointment.scheduled_at,
+        currentAccount.timezone
+      );
 
       return (
         appointmentDate.year === dayDate.getFullYear() &&
@@ -94,26 +101,23 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
     return appointment.user_id === currentUser?.id;
   }
 
-  async function handleAppointmentClick(appointment) {
+  function handleAppointmentClick(appointment) {
     if (!isOwnAppointment(appointment)) {
       return;
     }
 
-    try {
-      const fullAppointment = await apiFetch(`/api/v1/appointments/${appointment.id}`);
-
-      setEditingAppointment(fullAppointment);
-      setError("");
-    } catch (requestError) {
-      setError(requestError.message);
-    }
+    setEditingAppointment(appointment);
+    setError("");
   }
 
   function renderAppointment(appointment) {
     const ownAppointment = isOwnAppointment(appointment);
 
-    const endTime = calculateEndTime(appointment.scheduled_at, appointment.duration_minutes);
-    
+    const endTime = calculateEndTime(
+      appointment.scheduled_at,
+      appointment.duration_minutes
+    );
+
     const isPastAppointment = endTime < new Date();
 
     const timezoneLabel = timezoneAbbreviation(currentAccount.timezone);
@@ -121,25 +125,36 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
     const appointmentContent = (
       <>
         <span>
-          {formatTimeInTimezone(appointment.scheduled_at, currentAccount.timezone)}
+          {formatTimeInTimezone(
+            appointment.scheduled_at,
+            currentAccount.timezone
+          )}
           {" - "}
-          {formatTimeInTimezone(endTime.toISOString(), currentAccount.timezone)} {timezoneLabel}
+          {formatTimeInTimezone(
+            endTime.toISOString(),
+            currentAccount.timezone
+          )}{" "}
+          {timezoneLabel}
         </span>
 
-        <div>{appointment.user_name}</div>
+        {ownAppointment && <div>{appointment.client_name}</div>}
+
         <div>{appointment.resource_name}</div>
 
         {!ownAppointment && <div>Busy</div>}
       </>
     );
 
+    const appointmentClassName = `calendar-appointment${
+      isPastAppointment ? " past-appointment" : ""
+    }`;
 
     if (ownAppointment) {
       return (
         <button
           key={appointment.id}
           type="button"
-          className={`calendar-appointment${isPastAppointment ? " past-appointment" : ""}`}
+          className={appointmentClassName}
           onClick={() => handleAppointmentClick(appointment)}
         >
           {appointmentContent}
@@ -148,7 +163,7 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
     }
 
     return (
-      <div key={appointment.id} className={`calendar-appointment${isPastAppointment ? " past-appointment" : ""}`}>
+      <div key={appointment.id} className={appointmentClassName}>
         {appointmentContent}
       </div>
     );
@@ -186,8 +201,10 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
           const dayAppointments = appointmentsForDay(dayDate);
 
           return (
-            <div key={index} className={`calendar-day${isToday(dayDate) ? " today" : ""}`}
-              >
+            <div
+              key={index}
+              className={`calendar-day${isToday(dayDate) ? " today" : ""}`}
+            >
               {dayDate && (
                 <>
                   <strong>{dayDate.getDate()}</strong>
@@ -203,7 +220,10 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
       {editingAppointment && currentUser && (
         <div className="calendar-edit-overlay">
           <div className="calendar-edit-modal">
-            <button className="close-button" onClick={() => setEditingAppointment(null)}>
+            <button
+              className="close-button"
+              onClick={() => setEditingAppointment(null)}
+            >
               ✕
             </button>
 
