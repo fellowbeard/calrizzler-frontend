@@ -14,6 +14,8 @@ export default function UserDashboard({ currentUser, currentAccount }) {
   const [showResourceForm, setShowResourceForm] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
 
+  const isOwner = currentUser?.role === "owner";
+
   const fetchDashboard = useCallback(() => {
     apiFetch(`/api/v1/dashboard`)
       .then((data) => {
@@ -46,12 +48,18 @@ export default function UserDashboard({ currentUser, currentAccount }) {
     navigate("/clients/new");
   }
 
-  if (!dashboard && errorMessage) return <p className="error">{errorMessage}</p>;
-  if (!dashboard) return <p>Loading...</p>;
+  if (!dashboard && errorMessage) {
+    return <p className="error">{errorMessage}</p>;
+  }
+
+  if (!dashboard) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <main>
       {errorMessage && <p className="error">{errorMessage}</p>}
+
       <h1>{dashboard.account?.business_name}</h1>
 
       <h2>
@@ -64,6 +72,7 @@ export default function UserDashboard({ currentUser, currentAccount }) {
       </div>
 
       <h3>Recent Clients</h3>
+
       <div>
         {dashboard.recent_clients?.map((client) => (
           <div key={client.id}>
@@ -75,6 +84,7 @@ export default function UserDashboard({ currentUser, currentAccount }) {
       </div>
 
       <h3>Find Client</h3>
+
       <select defaultValue="" onChange={handleClientSelect}>
         <option value="" disabled>
           Select a client
@@ -125,7 +135,9 @@ export default function UserDashboard({ currentUser, currentAccount }) {
           onServiceDeleted={(deletedServiceId) => {
             setDashboard({
               ...dashboard,
-              services: dashboard.services.filter((service) => service.id !== deletedServiceId),
+              services: dashboard.services.filter(
+                (service) => service.id !== deletedServiceId
+              ),
             });
 
             setEditingService(null);
@@ -138,7 +150,9 @@ export default function UserDashboard({ currentUser, currentAccount }) {
         {dashboard.services?.length > 0 ? (
           dashboard.services.map((service) => (
             <div key={service.id}>
-              <strong>{service.title}</strong> — ${service.price} — {service.duration_minutes} minutes
+              <strong>{service.title}</strong> — ${service.price} —{" "}
+              {service.duration_minutes} minutes
+
               <button
                 onClick={() => {
                   setEditingService(service);
@@ -156,16 +170,18 @@ export default function UserDashboard({ currentUser, currentAccount }) {
 
       <h3>Resources</h3>
 
-      <button
-        onClick={() => {
-          setEditingResource(null);
-          setShowResourceForm(!showResourceForm);
-        }}
-      >
-        {showResourceForm ? "Cancel" : "New Resource"}
-      </button>
+      {isOwner && (
+        <button
+          onClick={() => {
+            setEditingResource(null);
+            setShowResourceForm(!showResourceForm);
+          }}
+        >
+          {showResourceForm ? "Cancel" : "New Resource"}
+        </button>
+      )}
 
-      {showResourceForm && (
+      {isOwner && showResourceForm && (
         <ResourceForm
           key={editingResource ? editingResource.id : "new"}
           existingResource={editingResource}
@@ -181,7 +197,9 @@ export default function UserDashboard({ currentUser, currentAccount }) {
             setDashboard({
               ...dashboard,
               resources: dashboard.resources.map((resource) =>
-                resource.id === updatedResource.id ? updatedResource : resource
+                resource.id === updatedResource.id
+                  ? updatedResource
+                  : resource
               ),
             });
 
@@ -191,7 +209,9 @@ export default function UserDashboard({ currentUser, currentAccount }) {
           onResourceDeleted={(deletedResourceId) => {
             setDashboard({
               ...dashboard,
-              resources: dashboard.resources.filter((resource) => resource.id !== deletedResourceId),
+              resources: dashboard.resources.filter(
+                (resource) => resource.id !== deletedResourceId
+              ),
             });
 
             setEditingResource(null);
@@ -205,14 +225,17 @@ export default function UserDashboard({ currentUser, currentAccount }) {
           dashboard.resources.map((resource) => (
             <div key={resource.id}>
               <strong>{resource.name}</strong>
-              <button
-                onClick={() => {
-                  setEditingResource(resource);
-                  setShowResourceForm(true);
-                }}
-              >
-                Edit
-              </button>
+
+              {isOwner && (
+                <button
+                  onClick={() => {
+                    setEditingResource(resource);
+                    setShowResourceForm(true);
+                  }}
+                >
+                  Edit
+                </button>
+              )}
             </div>
           ))
         ) : (
