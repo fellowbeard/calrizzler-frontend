@@ -96,6 +96,8 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
     const ownAppointment = isOwnAppointment(appointment);
 
     const endTime = calculateEndTime(appointment.scheduled_at, appointment.duration_minutes);
+    
+    const isPastAppointment = endTime < new Date();
 
     const timezoneLabel = timezoneAbbreviation(currentAccount.timezone);
 
@@ -114,12 +116,13 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
       </>
     );
 
+
     if (ownAppointment) {
       return (
         <button
           key={appointment.id}
           type="button"
-          className="calendar-appointment"
+          className={`calendar-appointment${isPastAppointment ? " past-appointment" : ""}`}
           onClick={() => handleAppointmentClick(appointment)}
         >
           {appointmentContent}
@@ -128,7 +131,7 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
     }
 
     return (
-      <div key={appointment.id} className="calendar-appointment">
+      <div key={appointment.id} className={`calendar-appointment${isPastAppointment ? " past-appointment" : ""}`}>
         {appointmentContent}
       </div>
     );

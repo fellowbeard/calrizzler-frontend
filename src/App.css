@@ -226,6 +226,11 @@
   background: #ddd;
 }
 
+.calendar-appointment.past-appointment {
+  background-color: #d7a6fd;
+  color: #555;
+}
+
 .calendar-edit-overlay {
   position: fixed;
   top: 0;
