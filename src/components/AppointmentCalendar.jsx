@@ -73,6 +73,23 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
     });
   }
 
+  function isToday(dayDate) {
+    if (!dayDate || !currentAccount?.timezone) {
+      return false;
+    }
+
+    const today = datePartsInTimezone(
+      new Date().toISOString(),
+      currentAccount.timezone
+    );
+
+    return (
+      today.year === dayDate.getFullYear() &&
+      today.month === dayDate.getMonth() + 1 &&
+      today.day === dayDate.getDate()
+    );
+  }
+
   function isOwnAppointment(appointment) {
     return appointment.user_id === currentUser?.id;
   }
@@ -169,7 +186,8 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
           const dayAppointments = appointmentsForDay(dayDate);
 
           return (
-            <div key={index} className="calendar-day">
+            <div key={index} className={`calendar-day${isToday(dayDate) ? " today" : ""}`}
+              >
               {dayDate && (
                 <>
                   <strong>{dayDate.getDate()}</strong>

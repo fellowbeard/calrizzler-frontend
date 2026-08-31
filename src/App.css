@@ -209,6 +209,10 @@
   padding: 0.5rem;
 }
 
+.calendar-day.today {
+  border: 5px solid #6bccc1;
+}
+
 .calendar-appointment {
   margin-top: 0.5rem;
   padding: 0.25rem;
