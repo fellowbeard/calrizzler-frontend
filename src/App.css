@@ -209,6 +209,10 @@
   padding: 0.5rem;
 }
 
+.calendar-day.today {
+  border: 5px solid #6bccc1;
+}
+
 .calendar-appointment {
   margin-top: 0.5rem;
   padding: 0.25rem;
@@ -224,6 +228,11 @@
 
 .calendar-appointment:hover {
   background: #ddd;
+}
+
+.calendar-appointment.past-appointment {
+  background-color: #d7a6fd;
+  color: #555;
 }
 
 .calendar-edit-overlay {

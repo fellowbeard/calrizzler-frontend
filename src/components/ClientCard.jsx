@@ -187,7 +187,7 @@ export default function ClientCard({ currentUser, currentAccount }) {
       <div>
         {client.appointments?.length > 0 ? (
           [...client.appointments]
-            .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at))
+            .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
             .map((appointment) => {
               const serviceDurationTotal =
                 appointment.services?.reduce((total, service) => total + Number(service.duration_minutes ?? 0), 0) ?? 0;
