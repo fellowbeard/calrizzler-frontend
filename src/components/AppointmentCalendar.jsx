@@ -9,11 +9,7 @@ import {
   timezoneAbbreviation,
 } from "../utils/timezone.js";
 
-export default function AppointmentCalendar({
-  currentUser = null,
-  currentAccount = null,
-  onAppointmentUpdate = null,
-}) {
+export default function AppointmentCalendar({ currentUser = null, currentAccount = null, onAppointmentUpdate = null }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [editingAppointment, setEditingAppointment] = useState(null);
@@ -67,10 +63,7 @@ export default function AppointmentCalendar({
     }
 
     return appointments.filter((appointment) => {
-      const appointmentDate = datePartsInTimezone(
-        appointment.scheduled_at,
-        currentAccount.timezone
-      );
+      const appointmentDate = datePartsInTimezone(appointment.scheduled_at, currentAccount.timezone);
 
       return (
         appointmentDate.year === dayDate.getFullYear() &&
@@ -85,15 +78,10 @@ export default function AppointmentCalendar({
       return false;
     }
 
-    const today = datePartsInTimezone(
-      new Date().toISOString(),
-      currentAccount.timezone
-    );
+    const today = datePartsInTimezone(new Date().toISOString(), currentAccount.timezone);
 
     return (
-      today.year === dayDate.getFullYear() &&
-      today.month === dayDate.getMonth() + 1 &&
-      today.day === dayDate.getDate()
+      today.year === dayDate.getFullYear() && today.month === dayDate.getMonth() + 1 && today.day === dayDate.getDate()
     );
   }
 
@@ -113,10 +101,7 @@ export default function AppointmentCalendar({
   function renderAppointment(appointment) {
     const ownAppointment = isOwnAppointment(appointment);
 
-    const endTime = calculateEndTime(
-      appointment.scheduled_at,
-      appointment.duration_minutes
-    );
+    const endTime = calculateEndTime(appointment.scheduled_at, appointment.duration_minutes);
 
     const isPastAppointment = endTime < new Date();
 
@@ -125,16 +110,9 @@ export default function AppointmentCalendar({
     const appointmentContent = (
       <>
         <span>
-          {formatTimeInTimezone(
-            appointment.scheduled_at,
-            currentAccount.timezone
-          )}
+          {formatTimeInTimezone(appointment.scheduled_at, currentAccount.timezone)}
           {" - "}
-          {formatTimeInTimezone(
-            endTime.toISOString(),
-            currentAccount.timezone
-          )}{" "}
-          {timezoneLabel}
+          {formatTimeInTimezone(endTime.toISOString(), currentAccount.timezone)} {timezoneLabel}
         </span>
 
         {ownAppointment && <div>{appointment.client_name}</div>}
@@ -145,11 +123,9 @@ export default function AppointmentCalendar({
       </>
     );
 
-    const appointmentClassName = `calendar-appointment${
-      isPastAppointment ? " past-appointment" : ""
-    }`;
+    const appointmentClassName = `calendar-appointment${isPastAppointment ? " past-appointment" : ""}`;
 
-    if (ownAppointment) {
+    if (ownAppointment && !isPastAppointment) {
       return (
         <button
           key={appointment.id}
@@ -201,10 +177,7 @@ export default function AppointmentCalendar({
           const dayAppointments = appointmentsForDay(dayDate);
 
           return (
-            <div
-              key={index}
-              className={`calendar-day${isToday(dayDate) ? " today" : ""}`}
-            >
+            <div key={index} className={`calendar-day${isToday(dayDate) ? " today" : ""}`}>
               {dayDate && (
                 <>
                   <strong>{dayDate.getDate()}</strong>
@@ -220,10 +193,7 @@ export default function AppointmentCalendar({
       {editingAppointment && currentUser && (
         <div className="calendar-edit-overlay">
           <div className="calendar-edit-modal">
-            <button
-              className="close-button"
-              onClick={() => setEditingAppointment(null)}
-            >
+            <button className="close-button" onClick={() => setEditingAppointment(null)}>
               ✕
             </button>
 

@@ -275,3 +275,22 @@
 .close-button:hover {
   color: #333;
 }
+
+.service-title-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.service-title-button:hover {
+  text-decoration: underline;
+}
+
+.service-description {
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem;
+  border-left: 3px solid #6bccc1;
+}

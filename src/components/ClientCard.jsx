@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppointmentForm from "./forms/AppointmentForm.jsx";
 import { apiFetch } from "../utils/api.js";
-import { formatDateTimeInTimezone } from "../utils/timezone.js";
+import { calculateEndTime, formatDateTimeInTimezone } from "../utils/timezone.js";
 
 export default function ClientCard({ currentUser, currentAccount }) {
   const { id } = useParams();
@@ -159,6 +159,7 @@ export default function ClientCard({ currentUser, currentAccount }) {
           <input id="edit_phone" name="phone" value={clientForm.phone} onChange={handleClientChange} />
 
           <button type="submit">Save Client</button>
+
           <button type="button" onClick={() => setIsEditingClient(false)}>
             Cancel
           </button>
@@ -192,13 +193,12 @@ export default function ClientCard({ currentUser, currentAccount }) {
               const serviceDurationTotal =
                 appointment.services?.reduce((total, service) => total + Number(service.duration_minutes ?? 0), 0) ?? 0;
 
-              return (
-                <button
-                  key={appointment.id}
-                  type="button"
-                  className="appointment-item"
-                  onClick={() => setEditingAppointment(appointment)}
-                >
+              const endTime = calculateEndTime(appointment.scheduled_at, appointment.duration_minutes);
+
+              const isPastAppointment = endTime < new Date();
+
+              const appointmentContent = (
+                <>
                   <div className="appointment-meta">
                     <strong>{formatDateTimeInTimezone(appointment.scheduled_at, currentAccount?.timezone)}</strong>
 
@@ -228,6 +228,25 @@ export default function ClientCard({ currentUser, currentAccount }) {
                       <div className="service-entry">No services recorded for this appointment.</div>
                     )}
                   </div>
+                </>
+              );
+
+              if (isPastAppointment) {
+                return (
+                  <div key={appointment.id} className="appointment-item past-appointment">
+                    {appointmentContent}
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={appointment.id}
+                  type="button"
+                  className="appointment-item"
+                  onClick={() => setEditingAppointment(appointment)}
+                >
+                  {appointmentContent}
                 </button>
               );
             })

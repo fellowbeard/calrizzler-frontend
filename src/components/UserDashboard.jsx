@@ -1,23 +1,29 @@
-import { useEffect, useState, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
 import { apiFetch } from "../utils/api.js";
-import ServiceForm from "./forms/ServiceForm.jsx";
-import ResourceForm from "./forms/ResourceForm.jsx";
 import AppointmentCalendar from "./AppointmentCalendar.jsx";
+import ResourceForm from "./forms/ResourceForm.jsx";
+import ServiceForm from "./forms/ServiceForm.jsx";
 
 export default function UserDashboard({ currentUser, currentAccount }) {
   const navigate = useNavigate();
+  const servicesRef = useRef(null);
+
   const [dashboard, setDashboard] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
+
   const [showResourceForm, setShowResourceForm] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
 
   const isOwner = currentUser?.role === "owner";
 
   const fetchDashboard = useCallback(() => {
-    apiFetch(`/api/v1/dashboard`)
+    apiFetch("/api/v1/dashboard")
       .then((data) => {
         setDashboard(data);
         setErrorMessage("");
@@ -31,6 +37,20 @@ export default function UserDashboard({ currentUser, currentAccount }) {
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (servicesRef.current && !servicesRef.current.contains(event.target)) {
+        setSelectedService(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   function handleClientSelect(event) {
     const clientId = event.target.value;
@@ -46,6 +66,98 @@ export default function UserDashboard({ currentUser, currentAccount }) {
 
   function handleNewClient() {
     navigate("/clients/new");
+  }
+
+  function handleNewService() {
+    setEditingService(null);
+    setSelectedService(null);
+    setShowServiceForm((current) => !current);
+  }
+
+  function handleEditService(service) {
+    setEditingService(service);
+    setSelectedService(null);
+    setShowServiceForm(true);
+  }
+
+  function handleServiceCreated(createdService) {
+    setDashboard((currentDashboard) => ({
+      ...currentDashboard,
+      services: [...(currentDashboard.services || []), createdService],
+    }));
+
+    setEditingService(null);
+    setShowServiceForm(false);
+  }
+
+  function handleServiceUpdated(updatedService) {
+    setDashboard((currentDashboard) => ({
+      ...currentDashboard,
+      services: currentDashboard.services.map((service) =>
+        service.id === updatedService.id ? updatedService : service
+      ),
+    }));
+
+    setEditingService(null);
+    setSelectedService(null);
+    setShowServiceForm(false);
+  }
+
+  function handleServiceDeleted(deletedServiceId) {
+    setDashboard((currentDashboard) => ({
+      ...currentDashboard,
+      services: currentDashboard.services.filter((service) => service.id !== deletedServiceId),
+    }));
+
+    setEditingService(null);
+    setSelectedService(null);
+    setShowServiceForm(false);
+  }
+
+  function handleServiceSelect(service) {
+    setSelectedService((currentService) => (currentService?.id === service.id ? null : service));
+  }
+
+  function handleNewResource() {
+    setEditingResource(null);
+    setShowResourceForm((current) => !current);
+  }
+
+  function handleEditResource(resource) {
+    setEditingResource(resource);
+    setShowResourceForm(true);
+  }
+
+  function handleResourceCreated(createdResource) {
+    setDashboard((currentDashboard) => ({
+      ...currentDashboard,
+      resources: [...(currentDashboard.resources || []), createdResource],
+    }));
+
+    setEditingResource(null);
+    setShowResourceForm(false);
+  }
+
+  function handleResourceUpdated(updatedResource) {
+    setDashboard((currentDashboard) => ({
+      ...currentDashboard,
+      resources: currentDashboard.resources.map((resource) =>
+        resource.id === updatedResource.id ? updatedResource : resource
+      ),
+    }));
+
+    setEditingResource(null);
+    setShowResourceForm(false);
+  }
+
+  function handleResourceDeleted(deletedResourceId) {
+    setDashboard((currentDashboard) => ({
+      ...currentDashboard,
+      resources: currentDashboard.resources.filter((resource) => resource.id !== deletedResourceId),
+    }));
+
+    setEditingResource(null);
+    setShowResourceForm(false);
   }
 
   if (!dashboard && errorMessage) {
@@ -67,8 +179,13 @@ export default function UserDashboard({ currentUser, currentAccount }) {
       </h2>
 
       <div>
-        <button onClick={handleNewAppointment}>New Appointment</button>
-        <button onClick={handleNewClient}>New Client</button>
+        <button type="button" onClick={handleNewAppointment}>
+          New Appointment
+        </button>
+
+        <button type="button" onClick={handleNewClient}>
+          New Client
+        </button>
       </div>
 
       <h3>Recent Clients</h3>
@@ -97,151 +214,89 @@ export default function UserDashboard({ currentUser, currentAccount }) {
         ))}
       </select>
 
-      <h3>Services</h3>
+      <section ref={servicesRef}>
+        <h3>Services</h3>
 
-      <button
-        onClick={() => {
-          setEditingService(null);
-          setShowServiceForm(!showServiceForm);
-        }}
-      >
-        {showServiceForm ? "Cancel" : "New Service"}
-      </button>
-
-      {showServiceForm && (
-        <ServiceForm
-          key={editingService ? editingService.id : "new"}
-          currentUser={currentUser}
-          existingService={editingService}
-          onServiceCreated={(createdService) => {
-            setDashboard({
-              ...dashboard,
-              services: [...(dashboard.services || []), createdService],
-            });
-
-            setShowServiceForm(false);
-          }}
-          onServiceUpdated={(updatedService) => {
-            setDashboard({
-              ...dashboard,
-              services: dashboard.services.map((service) =>
-                service.id === updatedService.id ? updatedService : service
-              ),
-            });
-
-            setEditingService(null);
-            setShowServiceForm(false);
-          }}
-          onServiceDeleted={(deletedServiceId) => {
-            setDashboard({
-              ...dashboard,
-              services: dashboard.services.filter(
-                (service) => service.id !== deletedServiceId
-              ),
-            });
-
-            setEditingService(null);
-            setShowServiceForm(false);
-          }}
-        />
-      )}
-
-      <div>
-        {dashboard.services?.length > 0 ? (
-          dashboard.services.map((service) => (
-            <div key={service.id}>
-              <strong>{service.title}</strong> — ${service.price} —{" "}
-              {service.duration_minutes} minutes
-
-              <button
-                onClick={() => {
-                  setEditingService(service);
-                  setShowServiceForm(true);
-                }}
-              >
-                Edit
-              </button>
-            </div>
-          ))
-        ) : (
-          <p>No services yet.</p>
+        {isOwner && (
+          <button type="button" onClick={handleNewService}>
+            {showServiceForm && !editingService ? "Cancel" : "New Service"}
+          </button>
         )}
-      </div>
 
-      <h3>Resources</h3>
+        {isOwner && showServiceForm && (
+          <ServiceForm
+            key={editingService?.id || "new"}
+            currentUser={currentUser}
+            existingService={editingService}
+            onServiceCreated={handleServiceCreated}
+            onServiceUpdated={handleServiceUpdated}
+            onServiceDeleted={handleServiceDeleted}
+          />
+        )}
 
-      {isOwner && (
-        <button
-          onClick={() => {
-            setEditingResource(null);
-            setShowResourceForm(!showResourceForm);
-          }}
-        >
-          {showResourceForm ? "Cancel" : "New Resource"}
-        </button>
-      )}
-
-      {isOwner && showResourceForm && (
-        <ResourceForm
-          key={editingResource ? editingResource.id : "new"}
-          existingResource={editingResource}
-          onResourceCreated={(createdResource) => {
-            setDashboard({
-              ...dashboard,
-              resources: [...(dashboard.resources || []), createdResource],
-            });
-
-            setShowResourceForm(false);
-          }}
-          onResourceUpdated={(updatedResource) => {
-            setDashboard({
-              ...dashboard,
-              resources: dashboard.resources.map((resource) =>
-                resource.id === updatedResource.id
-                  ? updatedResource
-                  : resource
-              ),
-            });
-
-            setEditingResource(null);
-            setShowResourceForm(false);
-          }}
-          onResourceDeleted={(deletedResourceId) => {
-            setDashboard({
-              ...dashboard,
-              resources: dashboard.resources.filter(
-                (resource) => resource.id !== deletedResourceId
-              ),
-            });
-
-            setEditingResource(null);
-            setShowResourceForm(false);
-          }}
-        />
-      )}
-
-      <div>
-        {dashboard.resources?.length > 0 ? (
-          dashboard.resources.map((resource) => (
-            <div key={resource.id}>
-              <strong>{resource.name}</strong>
-
-              {isOwner && (
-                <button
-                  onClick={() => {
-                    setEditingResource(resource);
-                    setShowResourceForm(true);
-                  }}
-                >
-                  Edit
+        <div>
+          {dashboard.services?.length > 0 ? (
+            dashboard.services.map((service) => (
+              <div key={service.id}>
+                <button type="button" className="service-title-button" onClick={() => handleServiceSelect(service)}>
+                  <strong>{service.title}</strong>
                 </button>
-              )}
-            </div>
-          ))
-        ) : (
-          <p>No resources yet.</p>
+                {" — "}${service.price}
+                {" — "}
+                {service.duration_minutes} minutes
+                {isOwner && (
+                  <button type="button" onClick={() => handleEditService(service)}>
+                    Edit
+                  </button>
+                )}
+                {selectedService?.id === service.id && (
+                  <div className="service-description">{service.description || "No description available."}</div>
+                )}
+              </div>
+            ))
+          ) : (
+            <p>No services yet.</p>
+          )}
+        </div>
+      </section>
+
+      <section>
+        <h3>Resources</h3>
+
+        {isOwner && (
+          <button type="button" onClick={handleNewResource}>
+            {showResourceForm && !editingResource ? "Cancel" : "New Resource"}
+          </button>
         )}
-      </div>
+
+        {isOwner && showResourceForm && (
+          <ResourceForm
+            key={editingResource?.id || "new"}
+            existingResource={editingResource}
+            onResourceCreated={handleResourceCreated}
+            onResourceUpdated={handleResourceUpdated}
+            onResourceDeleted={handleResourceDeleted}
+          />
+        )}
+
+        <div>
+          {dashboard.resources?.length > 0 ? (
+            dashboard.resources.map((resource) => (
+              <div key={resource.id}>
+                <strong>{resource.name}</strong>
+
+                {isOwner && (
+                  <button type="button" onClick={() => handleEditResource(resource)}>
+                    Edit
+                  </button>
+                )}
+              </div>
+            ))
+          ) : (
+            <p>No resources yet.</p>
+          )}
+        </div>
+      </section>
 
       <AppointmentCalendar
         appointments={dashboard.appointments || []}
