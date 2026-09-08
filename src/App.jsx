@@ -1,33 +1,40 @@
 import "./App.css";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import UserDashboard from "./components/UserDashboard.jsx";
 import Login from "./components/Login.jsx";
-import LogOut from "./components/LogOut.jsx";
 import ClientCard from "./components/ClientCard.jsx";
 import NewClient from "./components/forms/NewClient.jsx";
 import NewAppointment from "./components/forms/NewAppointment.jsx";
 import AccountSettings from "./components/AccountSettings.jsx";
+import AcceptInvitation from "./components/AcceptInvitation.jsx";
+import GooeyMenu from "./components/GooeyMenu.jsx";
 
 import { apiFetch } from "./utils/api.js";
 import { getToken, removeToken } from "./utils/auth.js";
-import AcceptInvitation from "./components/AcceptInvitation.jsx";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentAccount, setCurrentAccount] = useState(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(() => Boolean(getToken()));
+  const [isAuthLoading, setIsAuthLoading] = useState(() =>
+    Boolean(getToken())
+  );
 
   const isOwner = currentUser?.role === "owner";
   const location = useLocation();
-  const isPublicAuthPage = location.pathname === "/" || location.pathname === "/accept-invitation";
-  const isDashboardPage = location.pathname === "/userdashboard";
+
+  const isPublicAuthPage =
+    location.pathname === "/" ||
+    location.pathname === "/accept-invitation";
 
   useEffect(() => {
     const token = getToken();
 
-    if (!token) return;
+    if (!token) {
+      setIsAuthLoading(false);
+      return;
+    }
 
     apiFetch("/api/v1/me")
       .then((user) => {
@@ -44,7 +51,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setCurrentAccount(null);
+      return;
+    }
 
     apiFetch("/api/v1/account")
       .then((account) => {
@@ -62,31 +72,27 @@ function App() {
   return (
     <>
       {currentUser && !isPublicAuthPage && (
-        <nav>
-          {!isDashboardPage && (
-            <>
-              <Link to="/userdashboard">Dashboard</Link>
-            </>
-          )}
-
-          {isOwner && (
-            <>
-              <Link to="/account/settings">Account Settings</Link>
-            </>
-          )}
-
-          <LogOut setCurrentUser={setCurrentUser} setCurrentAccount={setCurrentAccount} />
-        </nav>
+        <GooeyMenu
+          currentUser={currentUser}
+          setCurrentUser={setCurrentUser}
+          setCurrentAccount={setCurrentAccount}
+        />
       )}
 
       <Routes>
-        <Route path="/" element={<Login setCurrentUser={setCurrentUser} />} />
+        <Route
+          path="/"
+          element={<Login setCurrentUser={setCurrentUser} />}
+        />
 
         <Route
           path="/userdashboard"
           element={
             currentUser ? (
-              <UserDashboard currentUser={currentUser} currentAccount={currentAccount} />
+              <UserDashboard
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
             ) : (
               <p>Please log in first.</p>
             )
@@ -97,7 +103,10 @@ function App() {
           path="/clients/:id"
           element={
             currentUser ? (
-              <ClientCard currentUser={currentUser} currentAccount={currentAccount} />
+              <ClientCard
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
             ) : (
               <p>Please log in first.</p>
             )
@@ -106,14 +115,23 @@ function App() {
 
         <Route
           path="/clients/new"
-          element={currentUser ? <NewClient currentUser={currentUser} /> : <p>Please log in first.</p>}
+          element={
+            currentUser ? (
+              <NewClient currentUser={currentUser} />
+            ) : (
+              <p>Please log in first.</p>
+            )
+          }
         />
 
         <Route
           path="/appointments/new"
           element={
             currentUser ? (
-              <NewAppointment currentUser={currentUser} currentAccount={currentAccount} />
+              <NewAppointment
+                currentUser={currentUser}
+                currentAccount={currentAccount}
+              />
             ) : (
               <p>Please log in first.</p>
             )
@@ -130,11 +148,17 @@ function App() {
                 setCurrentAccount={setCurrentAccount}
               />
             ) : (
-              <p>You do not have permission to access account settings.</p>
+              <p>
+                You do not have permission to access account settings.
+              </p>
             )
           }
         />
-        <Route path="/accept-invitation" element={<AcceptInvitation />} />
+
+        <Route
+          path="/accept-invitation"
+          element={<AcceptInvitation />}
+        />
       </Routes>
     </>
   );

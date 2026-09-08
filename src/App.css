@@ -294,3 +294,508 @@
   padding: 0.75rem;
   border-left: 3px solid #6bccc1;
 }
+
+:root {
+  --calrizzler-primary: #6bccc1;
+  --calrizzler-primary-dark: #378b82;
+  --calrizzler-ink: #232323;
+  --calrizzler-surface: #ffffff;
+  --calrizzler-danger: #c24661;
+}
+
+/* Accessibility */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+/* Gooey navigation container */
+
+.gooey-menu {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 1100;
+  width: 280px;
+  height: 250px;
+  pointer-events: none;
+}
+
+/* Hamburger/X button */
+
+.gooey-menu__toggle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: white;
+  background: var(--calrizzler-primary);
+  box-shadow: 0 10px 25px rgb(0 0 0 / 20%);
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.gooey-menu__toggle:hover {
+  background: var(--calrizzler-primary);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 26%);
+  transform: scale(1.06);
+}
+
+.gooey-menu--open .gooey-menu__toggle {
+  transform: scale(0.96);
+}
+
+.gooey-menu__toggle:focus-visible {
+  outline: 3px solid white;
+  outline-offset: 3px;
+}
+
+/* Hamburger-to-X animation */
+
+.gooey-menu__hamburger {
+  position: absolute;
+  inset: 0;
+}
+
+.gooey-menu__hamburger span {
+  position: absolute;
+  left: 19px;
+  width: 26px;
+  height: 3px;
+  border-radius: 999px;
+  background: white;
+  transition:
+    top 200ms ease,
+    transform 200ms ease,
+    opacity 150ms ease;
+}
+
+.gooey-menu__hamburger span:nth-child(1) {
+  top: 22px;
+}
+
+.gooey-menu__hamburger span:nth-child(2) {
+  top: 30px;
+}
+
+.gooey-menu__hamburger span:nth-child(3) {
+  top: 38px;
+}
+
+.gooey-menu--open .gooey-menu__hamburger span:nth-child(1) {
+  top: 30px;
+  transform: rotate(45deg);
+}
+
+.gooey-menu--open .gooey-menu__hamburger span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.gooey-menu--open .gooey-menu__hamburger span:nth-child(3) {
+  top: 30px;
+  transform: rotate(-45deg);
+}
+
+/* SVG filter definition is visually hidden */
+
+.gooey-menu__filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Continuous gooey menu shape */
+
+.gooey-menu__shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  filter: url("#calrizzler-goo");
+}
+
+/*
+ * This is the body connecting the rounded menu lobes.
+ * The goo filter softens its joins into curved indentations.
+ */
+
+.gooey-menu__shapes::before {
+  content: "";
+  position: absolute;
+  top: 28px;
+  left: 8px;
+  width: 48px;
+  height: 146px;
+  border-radius: 24px;
+  background: var(--calrizzler-primary);
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition:
+    opacity 120ms ease,
+    transform 400ms cubic-bezier(0.18, 0.89, 0.32, 1.18);
+}
+
+/* Owner menu includes Dashboard, Settings, and Logout */
+
+.gooey-menu__shapes:has(.gooey-menu__shape--3)::before {
+  height: 202px;
+}
+
+.gooey-menu--open .gooey-menu__shapes::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+/* Rounded lobes */
+
+.gooey-menu__shape {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--calrizzler-primary);
+  opacity: 0;
+  transform: translateY(0) scale(0.4);
+  transition:
+    transform 400ms cubic-bezier(0.18, 0.89, 0.32, 1.28),
+    opacity 120ms ease;
+}
+
+.gooey-menu--open .gooey-menu__shape {
+  opacity: 1;
+}
+
+.gooey-menu--open .gooey-menu__shape--1 {
+  transform: translateY(56px) scale(1);
+}
+
+.gooey-menu--open .gooey-menu__shape--2 {
+  transform: translateY(112px) scale(1);
+}
+
+.gooey-menu--open .gooey-menu__shape--3 {
+  transform: translateY(168px) scale(1);
+}
+
+/* Menu item positioning */
+
+.gooey-menu__items {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.gooey-menu--open .gooey-menu__items {
+  pointer-events: auto;
+}
+
+.gooey-menu__item {
+  position: absolute;
+  left: 7px;
+  display: flex;
+  align-items: center;
+  min-width: 220px;
+  color: var(--calrizzler-ink);
+  text-decoration: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.4);
+  transform-origin: 25px center;
+  transition:
+    transform 400ms cubic-bezier(0.18, 0.89, 0.32, 1.28),
+    opacity 150ms ease;
+}
+
+.gooey-menu__item:nth-child(1) {
+  top: 63px;
+  transition-delay: 20ms;
+}
+
+.gooey-menu__item:nth-child(2) {
+  top: 119px;
+  transition-delay: 70ms;
+}
+
+.gooey-menu__item:nth-child(3) {
+  top: 175px;
+  transition-delay: 120ms;
+}
+
+.gooey-menu--open .gooey-menu__item {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+/* Letters and icons inside the teal shape */
+
+.gooey-menu__icon {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* Navigation text boxes */
+
+.gooey-menu__label,
+.gooey-menu__logout-control {
+  margin-left: 10px;
+  padding: 9px 14px;
+  border: 1px solid rgb(49 125 117 / 24%);
+  border-radius: 999px;
+  color: var(--calrizzler-ink);
+  background: var(--calrizzler-surface);
+  box-shadow: 0 7px 20px rgb(0 0 0 / 13%);
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+/*
+ * Hover moves the label slightly but does not change its color.
+ * There is intentionally no active-page color.
+ */
+
+.gooey-menu__item:hover .gooey-menu__label {
+  color: var(--calrizzler-ink);
+  background: var(--calrizzler-surface);
+  box-shadow: 0 9px 24px rgb(0 0 0 / 18%);
+  transform: translateX(4px);
+}
+
+.gooey-menu__item:focus-visible {
+  outline: none;
+}
+
+.gooey-menu__item:focus-visible .gooey-menu__label {
+  outline: 3px solid var(--calrizzler-primary);
+  outline-offset: 3px;
+}
+
+/* Logout */
+
+.gooey-menu__logout {
+  color: var(--calrizzler-danger);
+}
+
+.gooey-menu__logout-control {
+  padding: 0;
+  overflow: hidden;
+}
+
+.gooey-menu__logout-control button {
+  padding: 9px 14px;
+  border: 0;
+  color: var(--calrizzler-danger);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gooey-menu__logout:hover .gooey-menu__logout-control {
+  color: var(--calrizzler-danger);
+  background: var(--calrizzler-surface);
+  box-shadow: 0 9px 24px rgb(0 0 0 / 18%);
+  transform: translateX(4px);
+}
+
+.gooey-menu__logout:hover .gooey-menu__logout-control button {
+  color: var(--calrizzler-danger);
+  background: transparent;
+}
+
+.gooey-menu__logout-control button:focus-visible {
+  outline: 3px solid var(--calrizzler-primary);
+  outline-offset: -3px;
+}
+
+/* Background overlay while menu is open */
+
+.gooey-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1090;
+  padding: 0;
+  border: 0;
+  background: rgb(0 0 0 / 12%);
+  cursor: default;
+}
+
+/* Appointment calendar */
+
+.appointment-calendar {
+  margin-top: 2rem;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-weekdays {
+  font-weight: bold;
+  text-align: center;
+}
+
+.calendar-day {
+  min-height: 100px;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+}
+
+.calendar-day.today {
+  border: 5px solid var(--calrizzler-primary);
+}
+
+.calendar-appointment {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 4px;
+  color: white;
+  background: #3f3f3f;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 200ms ease,
+    background-color 200ms ease;
+}
+
+.calendar-appointment:hover {
+  color: var(--calrizzler-ink);
+  background: #ddd;
+}
+
+.calendar-appointment.past-appointment {
+  color: #555;
+  background-color: #d7a6fd;
+}
+
+/* Appointment edit modal */
+
+.calendar-edit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 50%);
+}
+
+.calendar-edit-modal {
+  position: relative;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  padding: 2rem;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: white;
+}
+
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem;
+  border: 0;
+  color: #666;
+  background: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+/* Services */
+
+.service-title-button {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.service-title-button:hover {
+  text-decoration: underline;
+}
+
+.service-description {
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem;
+  border-left: 3px solid var(--calrizzler-primary);
+}
+
+/* Smaller screens */
+
+@media (max-width: 600px) {
+  .gooey-menu {
+    top: 16px;
+    left: 16px;
+  }
+
+  .calendar-day {
+    min-height: 75px;
+    padding: 0.25rem;
+  }
+}
+
+/* Reduced-motion accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+  .gooey-menu *,
+  .gooey-menu *::before,
+  .gooey-menu *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
