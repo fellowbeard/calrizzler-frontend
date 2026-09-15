@@ -119,7 +119,7 @@ export default function AppointmentCalendar({ currentUser = null, currentAccount
 
         <div>{appointment.resource_name}</div>
 
-        {!ownAppointment && <div>Busy</div>}
+        {!ownAppointment && <div>Taken</div>}
       </>
     );
 
