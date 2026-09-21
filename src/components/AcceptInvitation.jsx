@@ -11,7 +11,6 @@ export default function AcceptInvitation() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [error, setError] = useState("");
@@ -32,7 +31,6 @@ export default function AcceptInvitation() {
           user: {
             first_name: firstName,
             last_name: lastName,
-            email,
             password,
             password_confirmation: passwordConfirmation,
           },
@@ -71,11 +69,6 @@ export default function AcceptInvitation() {
         <div>
           <label htmlFor="last_name">Last Name</label>
           <input id="last_name" value={lastName} onChange={(event) => setLastName(event.target.value)} />
-        </div>
-
-        <div>
-          <label htmlFor="email">Email</label>
-          <input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
         </div>
 
         <div>
