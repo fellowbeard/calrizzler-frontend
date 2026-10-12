@@ -196,132 +196,21 @@
   }
 }
 
-/* ---------------------------------------------------------
-   Appointment calendar
---------------------------------------------------------- */
-
-.appointment-calendar {
-  margin-top: 2rem;
-}
-
-.calendar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-}
-
-.calendar-weekdays {
-  font-weight: bold;
-  text-align: center;
-}
-
-.calendar-day {
-  min-height: 100px;
-  border: 1px solid #ddd;
-  padding: 0.5rem;
-}
-
-.calendar-day.today {
-  border: 5px solid #6bccc1;
-}
-
-.calendar-appointment {
-  margin-top: 0.5rem;
-  padding: 0.25rem;
-  border-radius: 4px;
-  background: #3f3f3f;
-  font-size: 0.85rem;
-  cursor: pointer;
-  border: none;
-  width: 100%;
-  text-align: left;
-  transition: background-color 0.2s;
-}
-
-.calendar-appointment:hover {
-  background: #ddd;
-}
-
-.calendar-appointment.past-appointment {
-  background-color: #d7a6fd;
-  color: #555;
-}
-
-.calendar-edit-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.calendar-edit-modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-}
-
-.close-button {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  color: #666;
-  transition: color 0.2s;
-}
-
-.close-button:hover {
-  color: #333;
-}
-
-.service-title-button {
-  background: none;
-  border: none;
-  padding: 0;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.service-title-button:hover {
-  text-decoration: underline;
-}
-
-.service-description {
-  margin: 0.5rem 0 1rem;
-  padding: 0.75rem;
-  border-left: 3px solid #6bccc1;
-}
 
 /* ---------------------------------------------------------
    Calrizzler colors
 --------------------------------------------------------- */
 
 :root {
-  --calrizzler-primary: #6bccc1;
-  --calrizzler-primary-dark: #378b82;
-  --calrizzler-ink: #232323;
-  --calrizzler-surface: #ffffff;
-  --calrizzler-danger: #c24661;
+  /*
+   * App.css uses semantic aliases from index.css so the entire app
+   * follows the Calrizzler palette from one source of truth.
+   */
+  --calrizzler-primary: var(--midnight-blue);
+  --calrizzler-primary-dark: var(--royal-blue);
+  --calrizzler-ink: var(--black);
+  --calrizzler-surface: var(--surface);
+  --calrizzler-danger: var(--danger);
 
   /*
    * Gooey menu sizing.
@@ -332,6 +221,40 @@
   --gooey-menu-row-height: 56px;
   --gooey-menu-toggle-size: 64px;
   --gooey-menu-shape-size: 60px;
+}
+
+
+/* ---------------------------------------------------------
+   Native form controls
+--------------------------------------------------------- */
+
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: var(--action);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--royal-blue);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  button,
+  input,
+  select,
+  textarea {
+    forced-color-adjust: auto;
+  }
 }
 
 /* ---------------------------------------------------------
@@ -397,7 +320,7 @@
   border: 0;
   border-radius: 50%;
 
-  color: white;
+  color: var(--antique-white);
   background: var(--calrizzler-primary);
 
   box-shadow: none;
@@ -421,7 +344,7 @@
 }
 
 .gooey-menu__toggle:focus-visible {
-  outline: 3px solid white;
+  outline: 3px solid var(--antique-white);
   outline-offset: 3px;
 }
 
@@ -442,7 +365,7 @@
   height: 3px;
 
   border-radius: 999px;
-  background: white;
+  background: var(--antique-white);
 
   transition:
     top 200ms ease,
@@ -673,7 +596,7 @@
 
   border-radius: 50%;
 
-  color: white;
+  color: var(--antique-white);
 
   font-size: 1rem;
   font-weight: 800;
@@ -689,7 +612,7 @@
 
   padding: 9px 14px;
 
-  border: 1px solid rgb(49 125 117 / 24%);
+  border: 1px solid rgb(13 13 91 / 18%);
   border-radius: 999px;
 
   color: var(--calrizzler-ink);
@@ -834,11 +757,12 @@
 .calendar-day {
   min-height: 100px;
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
+  background-color: var(--midnight-blue);
 }
 
 .calendar-day.today {
-  border: 5px solid var(--calrizzler-primary);
+  border: 4px solid var(--yellow);
 }
 
 .calendar-appointment {
@@ -850,8 +774,8 @@
   border: 0;
   border-radius: 4px;
 
-  color: white;
-  background: #3f3f3f;
+  color: var(--antique-white);
+  background: var(--purple);
 
   font-size: 0.85rem;
   text-align: left;
@@ -864,13 +788,13 @@
 }
 
 .calendar-appointment:hover {
-  color: var(--calrizzler-ink);
-  background: #ddd;
+  color: var(--black);
+  background: var(--orange);
 }
 
 .calendar-appointment.past-appointment {
-  color: #555;
-  background-color: #d7a6fd;
+  color: var(--antique-white);
+  background-color: var(--deep-teal);
 }
 
 /* ---------------------------------------------------------
@@ -903,7 +827,7 @@
 
   border-radius: 8px;
 
-  background: white;
+  background: var(--surface);
 }
 
 .close-button {
@@ -916,7 +840,7 @@
 
   border: 0;
 
-  color: #666;
+  color: var(--text);
   background: none;
 
   font-size: 1.5rem;
@@ -927,7 +851,7 @@
 }
 
 .close-button:hover {
-  color: #333;
+  color: var(--text-h);
 }
 
 /* ---------------------------------------------------------
@@ -955,7 +879,7 @@
   margin: 0.5rem 0 1rem;
   padding: 0.75rem;
 
-  border-left: 3px solid var(--calrizzler-primary);
+  border-left: 3px solid var(--orange);
 }
 
 /* ---------------------------------------------------------
@@ -1059,7 +983,7 @@
 .service-description {
   margin: 0.35rem 0 0.75rem;
   padding-left: 0.75rem;
-  border-left: 3px solid var(--calrizzler-primary);
+  border-left: 3px solid var(--orange);
 }
  
 /* Resources */
@@ -1135,12 +1059,12 @@ button.appointment-list-row:focus-visible {
 }
 
 .appointment-list-row.past-appointment {
-  opacity: 0.55;
+  opacity: 0.8;
   cursor: default;
 }
 
 .appointment-edit-dropdown {
   margin: 0.5rem 0 1rem;
   padding: 1rem;
-  border-left: 3px solid var(--calrizzler-primary);
+  border-left: 3px solid var(--orange);
 }
