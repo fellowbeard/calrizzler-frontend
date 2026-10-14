@@ -7,6 +7,8 @@ export default function ServicesList({ currentUser }) {
   const servicesRef = useRef(null);
 
   const [services, setServices] = useState([]);
+  const [archivedServices, setArchivedServices] = useState([]);
+  const [showArchivedServices, setShowArchivedServices] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,6 +32,18 @@ export default function ServicesList({ currentUser }) {
         setIsLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (!isOwner) return;
+
+    apiFetch("/api/v1/services/archived")
+      .then((data) => {
+        setArchivedServices(data);
+      })
+      .catch((error) => {
+        setErrorMessage(error.message || "Could not load archived services.");
+      });
+  }, [isOwner]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -75,11 +89,35 @@ export default function ServicesList({ currentUser }) {
   }
 
   function handleServiceDeleted(deletedServiceId) {
+    const archivedService = services.find((service) => service.id === deletedServiceId);
+
     setServices((currentServices) => currentServices.filter((service) => service.id !== deletedServiceId));
+
+    if (archivedService) {
+      setArchivedServices((current) =>
+        current.some((service) => service.id === archivedService.id) ? current : [...current, archivedService]
+      );
+    }
 
     setEditingService(null);
     setSelectedService(null);
     setShowServiceForm(false);
+  }
+
+  async function handleRestoreService(service) {
+    try {
+      setErrorMessage("");
+
+      const restoredService = await apiFetch(`/api/v1/services/${service.id}/restore`, { method: "PATCH" });
+
+      setArchivedServices((current) => current.filter((item) => item.id !== service.id));
+
+      setServices((current) =>
+        current.some((item) => item.id === restoredService.id) ? current : [...current, restoredService]
+      );
+    } catch (error) {
+      setErrorMessage(error.message || "Service could not be restored.");
+    }
   }
 
   function handleServiceSelect(service) {
@@ -144,6 +182,46 @@ export default function ServicesList({ currentUser }) {
           <p>No services yet.</p>
         )}
       </div>
+
+      {isOwner && (
+        <section className="archived-services">
+          <button type="button" onClick={() => setShowArchivedServices((current) => !current)}>
+            {showArchivedServices ? "Hide Archived Services" : "Show Archived Services"}
+          </button>
+
+          {showArchivedServices && (
+            <div className="services-list">
+              <h2>Archived Services</h2>
+
+              {archivedServices.length > 0 ? (
+                archivedServices.map((service) => (
+                  <div key={service.id} className="service-list-row">
+                    <div className="service-list-main">
+                      <span>{service.title}</span>
+
+                      <span className="service-list-meta">
+                        — ${service.price}
+                        {" — "}
+                        {service.duration_minutes} minutes
+                      </span>
+
+                      <button
+                        type="button"
+                        className="service-edit-button"
+                        onClick={() => handleRestoreService(service)}
+                      >
+                        Restore
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p>No archived services.</p>
+              )}
+            </div>
+          )}
+        </section>
+      )}
     </main>
   );
 }

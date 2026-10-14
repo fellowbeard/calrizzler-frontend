@@ -76,7 +76,7 @@ export default function ServiceForm({ existingService = null, onServiceCreated, 
         setService(blankService);
       })
       .catch((error) => {
-        setError(error.message || "Service could not be deleted.");
+        setError(error.message || "Service could not be archived.");
       });
   }
 
@@ -108,7 +108,7 @@ export default function ServiceForm({ existingService = null, onServiceCreated, 
 
       {isEditing && (
         <button type="button" onClick={handleDelete}>
-          Delete Service
+          Archive Service
         </button>
       )}
     </form>
