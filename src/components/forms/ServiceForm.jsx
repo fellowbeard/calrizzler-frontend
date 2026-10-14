@@ -52,6 +52,15 @@ export default function ServiceForm({ existingService = null, onServiceCreated, 
         }
       })
       .catch((error) => {
+        const duplicateTitle = error.validationErrors?.some(
+          (validationError) => validationError.field === "title" && validationError.message === "has already been taken"
+        );
+
+        if (duplicateTitle) {
+          setError("A service with that name already exists.");
+          return;
+        }
+
         setError(error.message || "Service could not be saved.");
       });
   }
