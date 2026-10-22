@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { apiFetch } from "../utils/api.js";
+import { formatDuration } from "../utils/duration.js";
 
 export default function AppointmentShow({ currentAccount }) {
   const { id } = useParams();
@@ -74,7 +75,7 @@ export default function AppointmentShow({ currentAccount }) {
         </div>
 
         <div>
-          <strong>Duration:</strong> {appointment.duration_minutes} minutes
+          <strong>Duration:</strong> {formatDuration(appointment.duration_minutes)}
         </div>
 
         <div>

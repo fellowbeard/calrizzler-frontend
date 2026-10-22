@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "../utils/api.js";
+import { formatDuration } from "../utils/duration.js";
 import ServiceForm from "./forms/ServiceForm.jsx";
 
 export default function ServicesList({ currentUser }) {
@@ -163,7 +164,7 @@ export default function ServicesList({ currentUser }) {
                 <span className="service-list-meta">
                   — ${service.price}
                   {" — "}
-                  {service.duration_minutes} minutes
+                  {formatDuration(service.duration_minutes)}
                 </span>
 
                 {isOwner && (
@@ -202,7 +203,7 @@ export default function ServicesList({ currentUser }) {
                       <span className="service-list-meta">
                         — ${service.price}
                         {" — "}
-                        {service.duration_minutes} minutes
+                        {formatDuration(service.duration_minutes)}
                       </span>
 
                       <button
