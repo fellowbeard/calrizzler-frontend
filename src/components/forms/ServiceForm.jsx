@@ -51,6 +51,7 @@ export default function ServiceForm({ existingService = null, onServiceCreated, 
           setService(blankService);
         }
       })
+
       .catch((error) => {
         const duplicateTitle = error.validationErrors?.some(
           (validationError) => validationError.field === "title" && validationError.message === "has already been taken"
@@ -61,7 +62,18 @@ export default function ServiceForm({ existingService = null, onServiceCreated, 
           return;
         }
 
-        setError(error.message || "Service could not be saved.");
+        const blankTitle = error.validationErrors?.some(
+          (validationError) => validationError.field === "title" && validationError.message.includes("blank")
+        );
+
+        if (blankTitle) {
+          setError("Service name can't be blank.");
+          return;
+        }
+
+        const validationMessage = error.validationErrors?.[0]?.message;
+
+        setError(validationMessage || error.message || "Service could not be saved.");
       });
   }
 
@@ -76,7 +88,7 @@ export default function ServiceForm({ existingService = null, onServiceCreated, 
         setService(blankService);
       })
       .catch((error) => {
-        setError(error.message || "Service could not be deleted.");
+        setError(error.message || "Service could not be archived.");
       });
   }
 
@@ -108,7 +120,7 @@ export default function ServiceForm({ existingService = null, onServiceCreated, 
 
       {isEditing && (
         <button type="button" onClick={handleDelete}>
-          Delete Service
+          Archive Service
         </button>
       )}
     </form>

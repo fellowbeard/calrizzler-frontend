@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { setToken } from "../utils/auth.js";
 import { apiFetch } from "../utils/api.js";
 
@@ -47,6 +47,9 @@ export default function Login({ setCurrentUser }) {
 
         <button type="submit">Log in</button>
       </form>
+      <p>
+        <Link to="/forgot-password">Forgot password?</Link>
+      </p>
     </main>
   );
 }

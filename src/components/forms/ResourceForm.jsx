@@ -50,7 +50,21 @@ export default function ResourceForm({
         }
       })
       .catch((error) => {
-        setError(error.message || "Resource could not be saved.");
+        const nameErrors = error.validationErrors?.filter((validationError) => validationError.field === "name");
+
+        if (nameErrors?.length) {
+          setError(
+            nameErrors
+              .map(({ message }) =>
+                message === "has already been taken"
+                  ? "A resource with this name already exists."
+                  : `Resource name ${message}.`
+              )
+              .join(" ")
+          );
+        } else {
+          setError(error.validationErrors?.[0]?.message || error.message || "Resource could not be saved.");
+        }
       });
   }
 

@@ -13,6 +13,8 @@ import ResourcesList from "./components/ResourcesList.jsx";
 import AppointmentsList from "./components/AppointmentsList.jsx";
 import AccountSettings from "./components/AccountSettings.jsx";
 import AcceptInvitation from "./components/AcceptInvitation.jsx";
+import ForgotPassword from "./components/ForgotPassword.jsx";
+import ResetPassword from "./components/ResetPassword.jsx";
 import GooeyMenu from "./components/GooeyMenu.jsx";
 
 import { apiFetch } from "./utils/api.js";
@@ -26,7 +28,9 @@ function App() {
   const isOwner = currentUser?.role === "owner";
   const location = useLocation();
 
-  const isPublicAuthPage = location.pathname === "/" || location.pathname === "/accept-invitation";
+  const isPublicAuthPage = ["/", "/accept-invitation", "/forgot-password", "/reset-password"].includes(
+    location.pathname
+  );
 
   useEffect(() => {
     const token = getToken();
@@ -153,6 +157,8 @@ function App() {
         />
 
         <Route path="/accept-invitation" element={<AcceptInvitation />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </>
   );

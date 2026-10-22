@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/api.js";
 import { toDateTimeLocalValue } from "../../utils/timezone.js";
+import { formatDuration } from "../../utils/duration.js";
 
 export default function AppointmentForm({
   currentUser,
@@ -229,10 +230,18 @@ export default function AppointmentForm({
         navigate(`/clients/${clientId}`);
       })
       .catch((requestError) => {
+        const pastAppointmentError = requestError.validationErrors?.some(
+          (validationError) =>
+            validationError.field === "scheduled_at" && validationError.message === "cannot be scheduled in the past"
+        );
+
+        if (pastAppointmentError) {
+          setError("You cannot schedule an appointment in the past. Please select a future date and time.");
+          return;
+        }
+
         setError(
-          requestError.validationErrors?.[0]?.message ||
-            requestError.validationErrors?.[0]?.message ||
-            requestError.message
+          requestError.validationErrors?.[0]?.message || requestError.message || "Appointment could not be saved."
         );
       });
   }
@@ -286,11 +295,11 @@ export default function AppointmentForm({
             checked={selectedServiceIds.includes(service.id)}
             onChange={() => handleServiceToggle(service.id)}
           />
-          {service.title} - ${service.price} - {service.duration_minutes ?? 0} min
+          {service.title} - ${service.price} - {formatDuration(service.duration_minutes ?? 0)}
         </label>
       ))}
 
-      {selectedServiceIds.length > 0 && <p>Service total: {selectedServiceDurationTotal} minutes</p>}
+      {selectedServiceIds.length > 0 && <p>Service total: {formatDuration(selectedServiceDurationTotal)}</p>}
 
       <label htmlFor="scheduled_at">Scheduled At</label>
 
@@ -325,12 +334,16 @@ export default function AppointmentForm({
         placeholder="Total time in minutes"
       />
 
+      {durationMinutes !== "" && <p>Appointment duration: {formatDuration(durationMinutes)}</p>}
+
       {isDurationOverridden && (
         <div>
-          <p>Duration has been manually changed from the service total of {selectedServiceDurationTotal} minutes.</p>
+          <p>
+            Duration has been manually changed from the service total of {formatDuration(selectedServiceDurationTotal)}.
+          </p>
 
           <button type="button" onClick={useCalculatedDuration}>
-            Use Service Total ({selectedServiceDurationTotal} minutes)
+            Use Service Total ({formatDuration(selectedServiceDurationTotal)})
           </button>
         </div>
       )}

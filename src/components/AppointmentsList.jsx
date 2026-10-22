@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api.js";
 import AppointmentForm from "./forms/AppointmentForm.jsx";
 import { calculateEndTime, formatDateTimeInTimezone } from "../utils/timezone.js";
+import { formatDuration } from "../utils/duration.js";
 
 export default function AppointmentsList({ currentUser, currentAccount }) {
   const navigate = useNavigate();
@@ -88,7 +89,7 @@ export default function AppointmentsList({ currentUser, currentAccount }) {
                     {" — "}
                     {resourceName}
                     {" — "}
-                    {appointment.duration_minutes} minutes
+                    {formatDuration(appointment.duration_minutes)}
                   </span>
                 </>
               );
