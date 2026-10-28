@@ -1068,3 +1068,286 @@ button.appointment-list-row:focus-visible {
   padding: 1rem;
   border-left: 3px solid var(--orange);
 }
+
+
+/* ---------------------------------------------------------
+   Business Hours
+--------------------------------------------------------- */
+
+.business-hours {
+  width: min(100%, 760px);
+  margin: 2rem auto;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+
+.business-hours h2 {
+  margin-bottom: 0.5rem;
+}
+
+.business-hours > p {
+  margin-bottom: 1.5rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.business-hours form {
+  display: flex;
+  flex-direction: column;
+}
+
+.business-hours-day {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.business-hours-day:last-of-type {
+  border-bottom: 0;
+}
+
+.business-hours-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.business-hours-day-header label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.business-hours-day-header input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--action);
+  cursor: pointer;
+}
+
+.business-hours-day-header strong {
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.business-hours-day-header span {
+  color: var(--text);
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.business-hours-ranges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.business-hours-range {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.business-hours-range select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.business-hours-range > span {
+  flex-shrink: 0;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.business-hours-range button {
+  flex-shrink: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.business-hours-range button:hover {
+  border-color: var(--danger);
+}
+
+.business-hours-actions {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.business-hours-actions button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.business-hours-actions button:hover {
+  background: var(--accent-bg);
+}
+
+.business-hours form > button[type="submit"] {
+  align-self: stretch;
+  margin-top: 1.5rem;
+  padding: 0.85rem 1.25rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--action);
+  color: var(--black);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.business-hours form > button[type="submit"]:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.business-hours button:disabled,
+.business-hours select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Mobile layout */
+
+@media (max-width: 600px) {
+  .business-hours {
+    padding: 1rem;
+    margin: 1.5rem auto;
+  }
+
+  .business-hours-day {
+    padding: 1rem 0;
+  }
+
+  .business-hours-range {
+    gap: 0.4rem;
+  }
+
+  .business-hours-range select {
+    padding: 0.6rem 0.35rem;
+    font-size: 0.8rem;
+  }
+
+  .business-hours-range button {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+.business-hours-error {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-left: 3px solid var(--danger);
+  border-radius: 4px;
+  background: rgb(180 35 61 / 8%);
+  color: var(--danger);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+/* Team Hours */
+
+.team-hours {
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.team-hours > p {
+  margin-bottom: 1.25rem;
+  color: var(--text);
+}
+
+.team-hours-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+}
+
+.team-hours-card {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.team-hours-card h3 {
+  margin: 0 0 1rem;
+  color: var(--text-h);
+  font-size: 1.1rem;
+}
+
+.team-hours-day {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.team-hours-day:last-child {
+  border-bottom: 0;
+}
+
+.team-hours-day strong {
+  color: var(--text-h);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.team-hours-day > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.team-hours-time {
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.team-hours-closed {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .team-hours-card {
+    padding: 1rem;
+  }
+
+  .team-hours-day {
+    grid-template-columns: 85px minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+}
+
