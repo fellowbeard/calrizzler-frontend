@@ -1,8 +1,42 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { apiFetch } from "../../utils/api.js";
 import { toDateTimeLocalValue } from "../../utils/timezone.js";
 import { formatDuration } from "../../utils/duration.js";
+
+function formatSlotTime(value) {
+  const time = value.split("T")[1]?.slice(0, 5) || value.slice(0, 5);
+  const [hours, minutes] = time.split(":").map(Number);
+
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) {
+    return value;
+  }
+
+  const period = hours >= 12 ? "PM" : "AM";
+
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+function normalizeSlot(slot, date, timezone) {
+  const raw = typeof slot === "string" ? slot : (slot?.starts_at ?? slot?.start ?? slot?.start_time ?? slot?.time);
+
+  if (typeof raw !== "string") return null;
+
+  if (/^\d{2}:\d{2}/.test(raw)) {
+    return `${date}T${raw.slice(0, 5)}`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    return toDateTimeLocalValue(raw, timezone);
+  }
+
+  return null;
+}
 
 export default function AppointmentForm({
   currentUser,
@@ -38,6 +72,10 @@ export default function AppointmentForm({
     return toDateTimeLocalValue(existingAppointment.scheduled_at, currentAccount.timezone);
   });
 
+  const [appointmentDate, setAppointmentDate] = useState(scheduledAt.slice(0, 10));
+
+  const [availabilityResult, setAvailabilityResult] = useState(null);
+
   const [status, setStatus] = useState(existingAppointment?.status ?? "scheduled");
 
   const [error, setError] = useState("");
@@ -57,6 +95,26 @@ export default function AppointmentForm({
     (total, service) => total + Number(service.duration_minutes ?? 0),
     0
   );
+
+  const parsedDuration = Number(durationMinutes);
+
+  const hasValidAvailabilityInputs =
+    !isEditing &&
+    Boolean(appointmentDate) &&
+    Boolean(resourceId) &&
+    durationMinutes !== "" &&
+    Number.isInteger(parsedDuration) &&
+    parsedDuration > 0;
+
+  const availabilityKey = hasValidAvailabilityInputs ? `${appointmentDate}|${resourceId}|${parsedDuration}` : "";
+
+  const availabilityIsCurrent = hasValidAvailabilityInputs && availabilityResult?.key === availabilityKey;
+
+  const isLoadingSlots = hasValidAvailabilityInputs && !availabilityIsCurrent;
+
+  const availableSlots = availabilityIsCurrent ? availabilityResult.slots : [];
+
+  const availabilityError = availabilityIsCurrent ? availabilityResult.error : "";
 
   useEffect(() => {
     apiFetch("/api/v1/dashboard")
@@ -87,6 +145,46 @@ export default function AppointmentForm({
       });
   }, [currentUser.id]);
 
+  useEffect(() => {
+    if (!availabilityKey) return;
+
+    let active = true;
+
+    const params = new URLSearchParams({
+      date: appointmentDate,
+      duration_minutes: String(parsedDuration),
+      resource_id: String(resourceId),
+    });
+
+    apiFetch(`/api/v1/availability?${params.toString()}`)
+      .then((data) => {
+        if (!active) return;
+
+        const slots = (data.slots ?? [])
+          .map((slot) => normalizeSlot(slot, appointmentDate, data.timezone || currentAccount?.timezone))
+          .filter(Boolean);
+
+        setAvailabilityResult({
+          key: availabilityKey,
+          slots,
+          error: "",
+        });
+      })
+      .catch((requestError) => {
+        if (!active) return;
+
+        setAvailabilityResult({
+          key: availabilityKey,
+          slots: [],
+          error: requestError.message || "Unable to load available times.",
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [availabilityKey, appointmentDate, parsedDuration, resourceId, currentAccount?.timezone]);
+
   function handleNewClientChange(event) {
     const { name, value } = event.target;
 
@@ -112,16 +210,46 @@ export default function AppointmentForm({
     if (!isDurationOverridden) {
       setDurationMinutes(calculateDuration(updatedServiceIds));
     }
+
+    if (!isEditing) {
+      setScheduledAt("");
+      setAvailabilityResult(null);
+    }
   }
 
   function handleDurationChange(event) {
     setDurationMinutes(event.target.value);
     setIsDurationOverridden(true);
+
+    if (!isEditing) {
+      setScheduledAt("");
+      setAvailabilityResult(null);
+    }
   }
 
   function useCalculatedDuration() {
     setDurationMinutes(selectedServiceDurationTotal);
     setIsDurationOverridden(false);
+
+    if (!isEditing) {
+      setScheduledAt("");
+      setAvailabilityResult(null);
+    }
+  }
+
+  function handleDateChange(event) {
+    setAppointmentDate(event.target.value);
+    setScheduledAt("");
+    setAvailabilityResult(null);
+  }
+
+  function handleResourceChange(event) {
+    setResourceId(event.target.value);
+
+    if (!isEditing) {
+      setScheduledAt("");
+      setAvailabilityResult(null);
+    }
   }
 
   function saveAppointment(selectedClientId) {
@@ -179,7 +307,7 @@ export default function AppointmentForm({
     }
 
     if (!scheduledAt) {
-      setError("Select an appointment date and time.");
+      setError("Select an available appointment time.");
       return;
     }
 
@@ -193,10 +321,13 @@ export default function AppointmentForm({
       return;
     }
 
-    const parsedDuration = Number(durationMinutes);
-
     if (!Number.isInteger(parsedDuration) || parsedDuration < 0) {
       setError("Duration must be a whole number of 0 minutes or more.");
+      return;
+    }
+
+    if (!isEditing && (isLoadingSlots || !availableSlots.includes(scheduledAt))) {
+      setError("Select a currently available appointment time.");
       return;
     }
 
@@ -204,9 +335,7 @@ export default function AppointmentForm({
       apiFetch("/api/v1/clients", {
         method: "POST",
         body: JSON.stringify({
-          client: {
-            ...newClient,
-          },
+          client: { ...newClient },
         }),
       })
         .then((createdClient) => saveAppointment(createdClient.id).then(() => createdClient))
@@ -250,7 +379,11 @@ export default function AppointmentForm({
     <form onSubmit={handleSubmit}>
       <h2>{isEditing ? "Edit Appointment" : "New Appointment"}</h2>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
 
       <label htmlFor="client">Client</label>
 
@@ -301,18 +434,9 @@ export default function AppointmentForm({
 
       {selectedServiceIds.length > 0 && <p>Service total: {formatDuration(selectedServiceDurationTotal)}</p>}
 
-      <label htmlFor="scheduled_at">Scheduled At</label>
-
-      <input
-        id="scheduled_at"
-        type="datetime-local"
-        value={scheduledAt}
-        onChange={(event) => setScheduledAt(event.target.value)}
-      />
-
       <label htmlFor="resource">Resource</label>
 
-      <select id="resource" value={resourceId} onChange={(event) => setResourceId(event.target.value)}>
+      <select id="resource" value={resourceId} onChange={handleResourceChange}>
         <option value="">Select a resource</option>
 
         {resources.map((resource) => (
@@ -346,6 +470,52 @@ export default function AppointmentForm({
             Use Service Total ({formatDuration(selectedServiceDurationTotal)})
           </button>
         </div>
+      )}
+
+      {isEditing ? (
+        <>
+          <label htmlFor="scheduled_at">Scheduled At</label>
+
+          <input
+            id="scheduled_at"
+            type="datetime-local"
+            value={scheduledAt}
+            onChange={(event) => setScheduledAt(event.target.value)}
+          />
+        </>
+      ) : (
+        <>
+          <label htmlFor="appointment_date">Appointment Date</label>
+
+          <input id="appointment_date" type="date" value={appointmentDate} onChange={handleDateChange} />
+
+          <label htmlFor="available_time">Available Time</label>
+
+          <select
+            id="available_time"
+            value={scheduledAt}
+            onChange={(event) => setScheduledAt(event.target.value)}
+            disabled={!hasValidAvailabilityInputs || isLoadingSlots || Boolean(availabilityError)}
+          >
+            <option value="">{isLoadingSlots ? "Loading available times..." : "Select a time"}</option>
+
+            {availableSlots.map((slot) => (
+              <option key={slot} value={slot}>
+                {formatSlotTime(slot)}
+              </option>
+            ))}
+          </select>
+
+          {availabilityError && (
+            <p className="error" role="alert">
+              {availabilityError}
+            </p>
+          )}
+
+          {hasValidAvailabilityInputs && !isLoadingSlots && !availabilityError && availableSlots.length === 0 && (
+            <p>No available times for this date and duration.</p>
+          )}
+        </>
       )}
 
       {isEditing && (
