@@ -111,8 +111,8 @@ export default function AppointmentForm({
   const availabilityIsCurrent = hasValidAvailabilityInputs && availabilityResult?.key === availabilityKey;
 
   const isLoadingSlots = hasValidAvailabilityInputs && !availabilityIsCurrent;
-
   const availableSlots = availabilityIsCurrent ? availabilityResult.slots : [];
+  const candidateSlots = availabilityIsCurrent ? availabilityResult.candidateSlots : [];
 
   const availabilityError = availabilityIsCurrent ? availabilityResult.error : "";
 
@@ -160,13 +160,18 @@ export default function AppointmentForm({
       .then((data) => {
         if (!active) return;
 
-        const slots = (data.slots ?? [])
-          .map((slot) => normalizeSlot(slot, appointmentDate, data.timezone || currentAccount?.timezone))
+        const timezone = data.timezone || currentAccount?.timezone;
+
+        const slots = (data.slots ?? []).map((slot) => normalizeSlot(slot, appointmentDate, timezone)).filter(Boolean);
+
+        const candidateSlots = (data.candidate_slots ?? [])
+          .map((slot) => normalizeSlot(slot, appointmentDate, timezone))
           .filter(Boolean);
 
         setAvailabilityResult({
           key: availabilityKey,
           slots,
+          candidateSlots,
           error: "",
         });
       })
@@ -176,6 +181,7 @@ export default function AppointmentForm({
         setAvailabilityResult({
           key: availabilityKey,
           slots: [],
+          candidateSlots: [],
           error: requestError.message || "Unable to load available times.",
         });
       });
@@ -499,11 +505,16 @@ export default function AppointmentForm({
           >
             <option value="">{isLoadingSlots ? "Loading available times..." : "Select a time"}</option>
 
-            {availableSlots.map((slot) => (
-              <option key={slot} value={slot}>
-                {formatSlotTime(slot)}
-              </option>
-            ))}
+            {candidateSlots.map((slot) => {
+              const isAvailable = availableSlots.includes(slot);
+
+              return (
+                <option key={slot} value={slot} disabled={!isAvailable}>
+                  {formatSlotTime(slot)}
+                  {!isAvailable ? " — Unavailable" : ""}
+                </option>
+              );
+            })}
           </select>
 
           {availabilityError && (
@@ -512,8 +523,8 @@ export default function AppointmentForm({
             </p>
           )}
 
-          {hasValidAvailabilityInputs && !isLoadingSlots && !availabilityError && availableSlots.length === 0 && (
-            <p>No available times for this date and duration.</p>
+          {hasValidAvailabilityInputs && !isLoadingSlots && !availabilityError && candidateSlots.length === 0 && (
+            <p>No appointment times for this date and duration.</p>
           )}
         </>
       )}
