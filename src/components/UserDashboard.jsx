@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { apiFetch } from "../utils/api.js";
 import AppointmentCalendar from "./AppointmentCalendar.jsx";
+import TeamHours from "./TeamHours.jsx";
 
 export default function UserDashboard({ currentUser, currentAccount }) {
   const navigate = useNavigate();
@@ -43,6 +44,10 @@ export default function UserDashboard({ currentUser, currentAccount }) {
           currentAccount={currentAccount}
           timezone={currentAccount?.timezone || dashboard.account?.timezone}
         />
+      </section>
+
+      <section>
+        <TeamHours users={dashboard.users || []} />
       </section>
 
       <section>

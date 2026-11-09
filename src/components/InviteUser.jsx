@@ -4,7 +4,6 @@ import { apiFetch } from "../utils/api.js";
 
 export default function InviteUser() {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("staff");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -22,13 +21,12 @@ export default function InviteUser() {
         body: JSON.stringify({
           invitation: {
             email,
-            role,
+            role: "staff",
           },
         }),
       });
 
       setEmail("");
-      setRole("staff");
       setSuccessMessage("Invitation sent.");
     } catch (requestError) {
       setError(requestError.validationErrors?.[0]?.message || requestError.message);
@@ -49,15 +47,6 @@ export default function InviteUser() {
           <label htmlFor="invite_email">Email</label>
           <input id="invite_email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
         </div>
-
-        <div>
-          <label htmlFor="invite_role">Role</label>
-          <select id="invite_role" value={role} onChange={(event) => setRole(event.target.value)}>
-            <option value="staff">Staff</option>
-            <option value="read_only">Read Only</option>
-          </select>
-        </div>
-
         <button type="submit">{isSending ? "Sending..." : "Send Invitation"}</button>
       </form>
     </section>
