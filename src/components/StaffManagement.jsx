@@ -29,8 +29,9 @@ export default function StaffManagement({ currentUser }) {
   }, []);
 
   async function handleRoleChange(user, newRole) {
-    if (user.id === currentUser.id || !user.active) return;
-    if (newRole === user.role) return;
+    if (user.id === currentUser.id || !user.active || savingUserId !== null || newRole === user.role) {
+      return;
+    }
 
     const previousRole = user.role;
 
@@ -69,7 +70,9 @@ export default function StaffManagement({ currentUser }) {
   }
 
   async function handleDeactivate(user) {
-    if (user.id === currentUser.id || !user.active) return;
+    if (user.id === currentUser.id || !user.active || savingUserId !== null) {
+      return;
+    }
 
     const confirmed = window.confirm(
       `Deactivate ${user.first_name || user.email}? They will no longer be able to access the account.`
@@ -89,6 +92,36 @@ export default function StaffManagement({ currentUser }) {
       setUsers((previous) => previous.map((item) => (item.id === user.id ? { ...item, active: false } : item)));
 
       setSuccessMessage("User deactivated.");
+    } catch (requestError) {
+      setError(requestError.validationErrors?.[0]?.message || requestError.message);
+    } finally {
+      setSavingUserId(null);
+    }
+  }
+
+  async function handleActivate(user) {
+    if (user.id === currentUser.id || user.active || savingUserId !== null) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Reactivate ${user.first_name || user.email}? They will regain access to the account.`
+    );
+
+    if (!confirmed) return;
+
+    setSavingUserId(user.id);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const updatedUser = await apiFetch(`/api/v1/users/${user.id}/activate`, {
+        method: "PATCH",
+      });
+
+      setUsers((previous) => previous.map((item) => (item.id === updatedUser.id ? updatedUser : item)));
+
+      setSuccessMessage("User reactivated.");
     } catch (requestError) {
       setError(requestError.validationErrors?.[0]?.message || requestError.message);
     } finally {
@@ -151,6 +184,7 @@ export default function StaffManagement({ currentUser }) {
                         >
                           <option value="owner">Owner</option>
                           <option value="staff">Staff</option>
+
                           {user.role === "read_only" && (
                             <option value="read_only" disabled>
                               Read Only (Development)
@@ -166,12 +200,25 @@ export default function StaffManagement({ currentUser }) {
                       )}
                     </td>
 
-                    <td>{user.active ? "Active" : "Inactive"}</td>
+                    <td>
+                      <span
+                        style={{
+                          color: user.active ? "#1A4040" : "#FF6B1A",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {user.active ? "Active" : "Deactivated"}
+                      </span>
+                    </td>
 
                     <td>
-                      {canManage && (
-                        <button type="button" disabled={savingUserId !== null} onClick={() => handleDeactivate(user)}>
-                          {savingUserId === user.id ? "Saving..." : "Deactivate"}
+                      {!isSelf && (
+                        <button
+                          type="button"
+                          disabled={savingUserId !== null}
+                          onClick={() => (user.active ? handleDeactivate(user) : handleActivate(user))}
+                        >
+                          {savingUserId === user.id ? "Saving..." : user.active ? "Deactivate" : "Activate"}
                         </button>
                       )}
 

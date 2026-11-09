@@ -21,6 +21,7 @@ import BusinessInformation from "./components/BusinessInformation.jsx";
 import BusinessHours from "./components/BusinessHours.jsx";
 import StaffManagement from "./components/StaffManagement.jsx";
 import MyWorkingHours from "./components/MyWorkingHours.jsx";
+import MyProfile from "./components/MyProfile.jsx";
 
 import { apiFetch } from "./utils/api.js";
 import { getToken, removeToken } from "./utils/auth.js";
@@ -208,6 +209,17 @@ function App() {
               <StaffManagement currentUser={currentUser} />
             ) : (
               <p>You do not have permission to manage staff.</p>
+            )
+          }
+        />
+
+        <Route
+          path="/settings/profile"
+          element={
+            currentUser?.role === "owner" || currentUser?.role === "staff" ? (
+              <MyProfile currentUser={currentUser} setCurrentUser={setCurrentUser} />
+            ) : (
+              <p>You do not have permission to access this profile.</p>
             )
           }
         />

@@ -2,13 +2,20 @@ import { authHeaders } from "./auth.js";
 
 export async function apiFetch(url, options = {}) {
   const useAuth = options.auth !== false;
+  const isFormData = options.body instanceof FormData;
+
+  const headers = new Headers({
+    ...(useAuth ? authHeaders() : { "Content-Type": "application/json" }),
+    ...(options.headers || {}),
+  });
+
+  if (isFormData) {
+    headers.delete("Content-Type");
+  }
 
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...(useAuth ? authHeaders() : { "Content-Type": "application/json" }),
-      ...(options.headers || {}),
-    },
+    headers,
   });
 
   const data = await parseJson(response);
