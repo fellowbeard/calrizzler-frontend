@@ -3,12 +3,10 @@ import { NavLink } from "react-router-dom";
 
 import LogOut from "./LogOut.jsx";
 
-export default function GooeyMenu({ currentUser, setCurrentUser, setCurrentAccount }) {
+export default function GooeyMenu({ setCurrentUser, setCurrentAccount }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   const titleId = useId();
-
-  const isOwner = currentUser?.role === "owner";
 
   const menuItems = [
     {
@@ -38,13 +36,11 @@ export default function GooeyMenu({ currentUser, setCurrentUser, setCurrentAccou
     },
   ];
 
-  if (isOwner) {
-    menuItems.push({
-      label: "Account Settings",
-      icon: "⚙",
-      to: "/account/settings",
-    });
-  }
+  menuItems.push({
+    label: "Settings",
+    icon: "⚙",
+    to: "/settings",
+  });
 
   const logoutIndex = menuItems.length;
   const menuCount = menuItems.length + 1;

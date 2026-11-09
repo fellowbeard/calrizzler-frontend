@@ -125,7 +125,8 @@ function sameRange(record, range) {
   );
 }
 
-export default function BusinessHours() {
+export default function BusinessHours({ currentUser }) {
+  const isOwner = currentUser?.role === "owner";
   const [schedule, setSchedule] = useState(initialSchedule);
   const dayRefs = useRef({});
   const [savedRecords, setSavedRecords] = useState([]);
@@ -367,6 +368,47 @@ export default function BusinessHours() {
       <section>
         <h2>Business Hours</h2>
         <p>Loading business hours...</p>
+      </section>
+    );
+  }
+
+  if (!isOwner) {
+    return (
+      <section className="business-hours">
+        <h2>Business Hours</h2>
+
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+
+        {!error &&
+          DAYS.map((day) => {
+            const ranges = savedRecords
+              .filter((record) => Number(record.day_of_week) === day.value)
+              .sort((a, b) => normalizeTime(a.opens_at).localeCompare(normalizeTime(b.opens_at)));
+
+            return (
+              <div key={day.value} className="business-hours-day">
+                <strong>{day.label}: </strong>
+
+                {ranges.length === 0
+                  ? "Closed"
+                  : ranges
+                      .map((range) => {
+                        const format = (value) => {
+                          const [hours, minutes] = normalizeTime(value).split(":").map(Number);
+
+                          return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours >= 12 ? "PM" : "AM"}`;
+                        };
+
+                        return `${format(range.opens_at)} – ${format(range.closes_at)}`;
+                      })
+                      .join(", ")}
+              </div>
+            );
+          })}
       </section>
     );
   }

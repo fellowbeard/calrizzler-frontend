@@ -16,6 +16,10 @@ import AcceptInvitation from "./components/AcceptInvitation.jsx";
 import ForgotPassword from "./components/ForgotPassword.jsx";
 import ResetPassword from "./components/ResetPassword.jsx";
 import GooeyMenu from "./components/GooeyMenu.jsx";
+import Settings from "./components/Settings.jsx";
+import BusinessInformation from "./components/BusinessInformation.jsx";
+import BusinessHours from "./components/BusinessHours.jsx";
+import StaffManagement from "./components/StaffManagement.jsx";
 
 import { apiFetch } from "./utils/api.js";
 import { getToken, removeToken } from "./utils/auth.js";
@@ -152,6 +156,46 @@ function App() {
               />
             ) : (
               <p>You do not have permission to access account settings.</p>
+            )
+          }
+        />
+
+        <Route
+          path="/settings/business"
+          element={
+            currentUser ? (
+              <BusinessInformation currentUser={currentUser} setCurrentAccount={setCurrentAccount} />
+            ) : (
+              <p>Please log in first.</p>
+            )
+          }
+        />
+
+        <Route
+          path="/settings/business-hours"
+          element={
+            currentUser?.role === "owner" ? (
+              <main>
+                <BusinessHours currentUser={currentUser} />
+              </main>
+            ) : (
+              <p>You do not have permission to edit business hours.</p>
+            )
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={currentUser ? <Settings currentUser={currentUser} /> : <p>Please log in first.</p>}
+        />
+
+        <Route
+          path="/settings/staff"
+          element={
+            currentUser?.role === "owner" ? (
+              <StaffManagement currentUser={currentUser} />
+            ) : (
+              <p>You do not have permission to manage staff.</p>
             )
           }
         />

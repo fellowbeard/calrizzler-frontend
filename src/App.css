@@ -1351,3 +1351,26 @@ button.appointment-list-row:focus-visible {
   }
 }
 
+.settings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.settings-list li {
+  margin-bottom: 16px;
+}
+
+.settings-list a {
+  display: block;
+  padding: 14px 18px;
+  text-decoration: none;
+  border: 1px solid #2424B0;
+  border-radius: 8px;
+  color: inherit;
+}
+
+.settings-list a:hover {
+  border-color: #FF6B1A;
+}
+

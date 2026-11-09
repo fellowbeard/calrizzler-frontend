@@ -108,7 +108,7 @@ export default function AccountSettings({ currentUser, setCurrentAccount }) {
 
         <button type="submit">{isSaving ? "Saving..." : "Save Settings"}</button>
       </form>
-      <BusinessHours />
+      <BusinessHours currentUser={currentUser} />
       <InviteUser />
     </main>
   );
