@@ -20,6 +20,7 @@ import Settings from "./components/Settings.jsx";
 import BusinessInformation from "./components/BusinessInformation.jsx";
 import BusinessHours from "./components/BusinessHours.jsx";
 import StaffManagement from "./components/StaffManagement.jsx";
+import MyWorkingHours from "./components/MyWorkingHours.jsx";
 
 import { apiFetch } from "./utils/api.js";
 import { getToken, removeToken } from "./utils/auth.js";
@@ -180,6 +181,17 @@ function App() {
               </main>
             ) : (
               <p>You do not have permission to edit business hours.</p>
+            )
+          }
+        />
+
+        <Route
+          path="/settings/my-working-hours"
+          element={
+            currentUser?.role === "owner" || currentUser?.role === "staff" ? (
+              <MyWorkingHours currentUser={currentUser} />
+            ) : (
+              <p>You do not have permission to manage working hours.</p>
             )
           }
         />
