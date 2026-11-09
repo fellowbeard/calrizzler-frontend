@@ -30,6 +30,19 @@ export default function StaffManagement({ currentUser }) {
 
   async function handleRoleChange(user, newRole) {
     if (user.id === currentUser.id || !user.active) return;
+    if (newRole === user.role) return;
+
+    const previousRole = user.role;
+
+    if (newRole === "owner") {
+      const name = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email;
+
+      const confirmed = window.confirm(
+        `Promote ${name} to Owner? They will have full access to account settings and staff management.`
+      );
+
+      if (!confirmed) return;
+    }
 
     setSavingUserId(user.id);
     setError("");
@@ -47,6 +60,8 @@ export default function StaffManagement({ currentUser }) {
 
       setSuccessMessage("User role updated.");
     } catch (requestError) {
+      setUsers((previous) => previous.map((item) => (item.id === user.id ? { ...item, role: previousRole } : item)));
+
       setError(requestError.validationErrors?.[0]?.message || requestError.message);
     } finally {
       setSavingUserId(null);
