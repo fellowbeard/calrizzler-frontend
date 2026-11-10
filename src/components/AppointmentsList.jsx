@@ -90,6 +90,12 @@ export default function AppointmentsList({ currentUser, currentAccount }) {
                     {resourceName}
                     {" — "}
                     {formatDuration(appointment.duration_minutes)}
+                    {appointment.notes?.trim() && (
+                      <>
+                        {" — "}
+                        {appointment.notes}
+                      </>
+                    )}
                   </span>
                 </>
               );

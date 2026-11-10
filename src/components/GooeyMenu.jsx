@@ -15,6 +15,11 @@ export default function GooeyMenu({ setCurrentUser, setCurrentAccount }) {
       to: "/userdashboard",
     },
     {
+      label: "Search",
+      icon: "⌕",
+      to: "/search",
+    },
+    {
       label: "Appointments",
       icon: "A",
       to: "/appointments",

@@ -78,6 +78,8 @@ export default function AppointmentForm({
 
   const [status, setStatus] = useState(existingAppointment?.status ?? "scheduled");
 
+  const [notes, setNotes] = useState(existingAppointment?.notes ?? "");
+
   const [error, setError] = useState("");
 
   const [newClient, setNewClient] = useState({
@@ -274,6 +276,7 @@ export default function AppointmentForm({
           duration_minutes: Number(durationMinutes),
           duration_overridden: isDurationOverridden,
           service_ids: selectedServiceIds.map(Number),
+          notes,
         },
       }),
     });
@@ -540,6 +543,19 @@ export default function AppointmentForm({
           </select>
         </>
       )}
+
+      <div>
+        <label htmlFor="appointment_notes">Appointment Notes (Optional)</label>
+
+        <textarea
+          id="appointment_notes"
+          name="notes"
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          rows={4}
+          placeholder="Add notes specific to this appointment..."
+        />
+      </div>
 
       <button type="submit">{isEditing ? "Update Appointment" : "Create Appointment"}</button>
 

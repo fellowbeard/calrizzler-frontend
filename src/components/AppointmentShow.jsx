@@ -87,6 +87,13 @@ export default function AppointmentShow({ currentAccount }) {
             <strong>Services:</strong> {appointment.services.map((service) => service.title).join(", ")}
           </div>
         )}
+
+        {appointment.notes?.trim() && (
+          <div>
+            <strong>Appointment Notes:</strong>
+            <p style={{ whiteSpace: "pre-wrap" }}>{appointment.notes}</p>
+          </div>
+        )}
       </div>
     </main>
   );
