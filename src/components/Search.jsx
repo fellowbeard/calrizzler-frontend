@@ -189,7 +189,7 @@ export default function Search() {
       </section>
 
       {!hasSearch ? (
-        <p>Search your clients, appointments, and services.</p>
+        <p>Start typing or use the filters above to find what you need.</p>
       ) : error ? (
         <p role="alert">{error}</p>
       ) : isLoading || search.trim() !== debouncedSearch ? (
