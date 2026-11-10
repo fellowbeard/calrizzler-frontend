@@ -14,12 +14,6 @@ export default function Settings({ currentUser }) {
             <Link to="/settings/business">Business Information</Link>
           </li>
 
-          {isOwner && (
-            <li>
-              <Link to="/settings/business-hours">Business Hours</Link>
-            </li>
-          )}
-
           {canEditWorkingHours && (
             <li>
               <Link to="/settings/my-working-hours">My Working Hours</Link>
@@ -31,6 +25,10 @@ export default function Settings({ currentUser }) {
               <Link to="/settings/staff">Staff Management</Link>
             </li>
           )}
+
+          <li>
+            <Link to="/settings/profile">My Profile</Link>
+          </li>
         </ul>
       </nav>
     </main>
