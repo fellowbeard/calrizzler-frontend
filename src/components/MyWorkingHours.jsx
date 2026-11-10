@@ -127,13 +127,12 @@ function describeDay(day, businessHours) {
 
   const inherited = businessHours
     .filter((record) => Number(record.day_of_week) === day.value)
+    .filter((record) => !record.is_closed)
     .sort((a, b) => String(a.opens_at).localeCompare(String(b.opens_at)));
 
-  if (inherited.length === 0) return "Closed (Business Hours)";
+  if (inherited.length === 0) return "Closed";
 
-  return `${inherited
-    .map((range) => `${formatTime(range.opens_at)} – ${formatTime(range.closes_at)}`)
-    .join(", ")} (Business Hours)`;
+  return inherited.map((range) => `${formatTime(range.opens_at)} – ${formatTime(range.closes_at)}`).join(", ");
 }
 
 export default function MyWorkingHours({ currentUser }) {
@@ -360,7 +359,15 @@ export default function MyWorkingHours({ currentUser }) {
               <option value="closed">Not Working</option>
             </select>
 
-            {day.mode === "inherit" && <p>{describeDay(day, businessHours)}</p>}
+            {day.mode === "inherit" && (
+              <div style={{ marginTop: 12 }}>
+                <p style={{ fontWeight: 600, marginBottom: 4 }}>Using business hours</p>
+
+                <p>
+                  <strong>{day.label}:</strong> {describeDay(day, businessHours)}
+                </p>
+              </div>
+            )}
 
             {day.mode === "closed" && <p>You are not available on this day.</p>}
 
