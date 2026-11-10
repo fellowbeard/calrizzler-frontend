@@ -16,6 +16,11 @@ export default function ClientCard({ currentUser, currentAccount }) {
     last_name: "",
     email: "",
     phone: "",
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    postal_code: "",
   });
   const [noteBody, setNoteBody] = useState("");
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -32,6 +37,11 @@ export default function ClientCard({ currentUser, currentAccount }) {
           last_name: data.last_name || "",
           email: data.email || "",
           phone: data.phone || "",
+          address_line1: data.address_line1 || "",
+          address_line2: data.address_line2 || "",
+          city: data.city || "",
+          state: data.state || "",
+          postal_code: data.postal_code || "",
         });
       })
       .catch((error) => {
@@ -159,6 +169,55 @@ export default function ClientCard({ currentUser, currentAccount }) {
           <label htmlFor="edit_phone">Phone</label>
           <input id="edit_phone" name="phone" value={clientForm.phone} onChange={handleClientChange} />
 
+          <fieldset>
+            <legend>Address (Optional)</legend>
+
+            <label htmlFor="edit_address_line1">Street Address</label>
+            <input
+              id="edit_address_line1"
+              name="address_line1"
+              value={clientForm.address_line1}
+              onChange={handleClientChange}
+              autoComplete="address-line1"
+            />
+
+            <label htmlFor="edit_address_line2">Apartment / Suite</label>
+            <input
+              id="edit_address_line2"
+              name="address_line2"
+              value={clientForm.address_line2}
+              onChange={handleClientChange}
+              autoComplete="address-line2"
+            />
+
+            <label htmlFor="edit_city">City</label>
+            <input
+              id="edit_city"
+              name="city"
+              value={clientForm.city}
+              onChange={handleClientChange}
+              autoComplete="address-level2"
+            />
+
+            <label htmlFor="edit_state">State</label>
+            <input
+              id="edit_state"
+              name="state"
+              value={clientForm.state}
+              onChange={handleClientChange}
+              autoComplete="address-level1"
+            />
+
+            <label htmlFor="edit_postal_code">ZIP / Postal Code</label>
+            <input
+              id="edit_postal_code"
+              name="postal_code"
+              value={clientForm.postal_code}
+              onChange={handleClientChange}
+              autoComplete="postal-code"
+            />
+          </fieldset>
+
           <button type="submit">Save Client</button>
 
           <button type="button" onClick={() => setIsEditingClient(false)}>
@@ -173,6 +232,26 @@ export default function ClientCard({ currentUser, currentAccount }) {
 
           <p>{client.email}</p>
           <p>{client.phone}</p>
+
+          {[client.address_line1, client.address_line2, client.city, client.state, client.postal_code].some(
+            Boolean
+          ) && (
+            <div className="client-address">
+              <h3>Address</h3>
+
+              <address>
+                {client.address_line1 && <div>{client.address_line1}</div>}
+                {client.address_line2 && <div>{client.address_line2}</div>}
+
+                {(client.city || client.state || client.postal_code) && (
+                  <div>
+                    {[client.city, client.state].filter(Boolean).join(", ")}
+                    {client.postal_code ? ` ${client.postal_code}` : ""}
+                  </div>
+                )}
+              </address>
+            </div>
+          )}
 
           <button type="button" onClick={() => setIsEditingClient(true)}>
             Edit Client
@@ -229,6 +308,13 @@ export default function ClientCard({ currentUser, currentAccount }) {
                       <div className="service-entry">No services recorded for this appointment.</div>
                     )}
                   </div>
+
+                  {appointment.notes?.trim() && (
+                    <div className="appointment-notes">
+                      <strong>Appointment Notes:</strong>
+                      <div style={{ whiteSpace: "pre-wrap" }}>{appointment.notes}</div>
+                    </div>
+                  )}
                 </>
               );
 

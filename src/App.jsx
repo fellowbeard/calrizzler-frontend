@@ -22,6 +22,7 @@ import BusinessHours from "./components/BusinessHours.jsx";
 import StaffManagement from "./components/StaffManagement.jsx";
 import MyWorkingHours from "./components/MyWorkingHours.jsx";
 import MyProfile from "./components/MyProfile.jsx";
+import Search from "./components/Search.jsx";
 
 import { apiFetch } from "./utils/api.js";
 import { getToken, removeToken } from "./utils/auth.js";
@@ -223,6 +224,7 @@ function App() {
             )
           }
         />
+        <Route path="/search" element={currentUser ? <Search /> : <p>Please log in first.</p>} />
 
         <Route path="/accept-invitation" element={<AcceptInvitation />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
