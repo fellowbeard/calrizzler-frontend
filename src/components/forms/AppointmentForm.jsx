@@ -4,39 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/api.js";
 import { toDateTimeLocalValue } from "../../utils/timezone.js";
 import { formatDuration } from "../../utils/duration.js";
-
-function formatSlotTime(value) {
-  const time = value.split("T")[1]?.slice(0, 5) || value.slice(0, 5);
-  const [hours, minutes] = time.split(":").map(Number);
-
-  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) {
-    return value;
-  }
-
-  const period = hours >= 12 ? "PM" : "AM";
-
-  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${period}`;
-}
-
-function normalizeSlot(slot, date, timezone) {
-  const raw = typeof slot === "string" ? slot : (slot?.starts_at ?? slot?.start ?? slot?.start_time ?? slot?.time);
-
-  if (typeof raw !== "string") return null;
-
-  if (/^\d{2}:\d{2}/.test(raw)) {
-    return `${date}T${raw.slice(0, 5)}`;
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) {
-    return raw;
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
-    return toDateTimeLocalValue(raw, timezone);
-  }
-
-  return null;
-}
+import { formatTime } from "../../utils/hours.js";
 
 export default function AppointmentForm({
   currentUser,
@@ -162,13 +130,10 @@ export default function AppointmentForm({
       .then((data) => {
         if (!active) return;
 
-        const timezone = data.timezone || currentAccount?.timezone;
-
-        const slots = (data.slots ?? []).map((slot) => normalizeSlot(slot, appointmentDate, timezone)).filter(Boolean);
-
-        const candidateSlots = (data.candidate_slots ?? [])
-          .map((slot) => normalizeSlot(slot, appointmentDate, timezone))
-          .filter(Boolean);
+        // The API returns UTC ISO timestamps; show them in the business's timezone.
+        const toLocal = (slot) => toDateTimeLocalValue(slot, data.timezone);
+        const slots = data.slots.map(toLocal);
+        const candidateSlots = data.candidate_slots.map(toLocal);
 
         setAvailabilityResult({
           key: availabilityKey,
@@ -191,7 +156,7 @@ export default function AppointmentForm({
     return () => {
       active = false;
     };
-  }, [availabilityKey, appointmentDate, parsedDuration, resourceId, currentAccount?.timezone]);
+  }, [availabilityKey, appointmentDate, parsedDuration, resourceId]);
 
   function handleNewClientChange(event) {
     const { name, value } = event.target;
@@ -235,7 +200,7 @@ export default function AppointmentForm({
     }
   }
 
-  function useCalculatedDuration() {
+  function resetToCalculatedDuration() {
     setDurationMinutes(selectedServiceDurationTotal);
     setIsDurationOverridden(false);
 
@@ -475,7 +440,7 @@ export default function AppointmentForm({
             Duration has been manually changed from the service total of {formatDuration(selectedServiceDurationTotal)}.
           </p>
 
-          <button type="button" onClick={useCalculatedDuration}>
+          <button type="button" onClick={resetToCalculatedDuration}>
             Use Service Total ({formatDuration(selectedServiceDurationTotal)})
           </button>
         </div>
@@ -513,7 +478,7 @@ export default function AppointmentForm({
 
               return (
                 <option key={slot} value={slot} disabled={!isAvailable}>
-                  {formatSlotTime(slot)}
+                  {formatTime(slot)}
                   {!isAvailable ? " — Unavailable" : ""}
                 </option>
               );

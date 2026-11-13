@@ -66,6 +66,14 @@ describe("AppointmentForm", () => {
         return Promise.resolve([{ id: 3, name: "Room A" }]);
       }
 
+      if (url.startsWith("/api/v1/availability")) {
+        return Promise.resolve({
+          timezone: "America/New_York",
+          slots: ["2027-01-15T15:30:00Z"],
+          candidate_slots: ["2027-01-15T15:00:00Z", "2027-01-15T15:30:00Z"],
+        });
+      }
+
       expect(url).toBe("/api/v1/appointments");
       expect(options.method).toBe("POST");
       return Promise.resolve({ id: 20 });
@@ -76,7 +84,11 @@ describe("AppointmentForm", () => {
     await user.selectOptions(await screen.findByLabelText("Client"), "1");
     await user.click(await screen.findByLabelText(/Consultation/));
     await user.selectOptions(screen.getByLabelText("Resource"), "3");
-    fireEvent.change(screen.getByLabelText("Scheduled At"), { target: { value: "2027-01-15T22:30" } });
+    fireEvent.change(screen.getByLabelText("Appointment Date"), { target: { value: "2027-01-15" } });
+
+    // 10:00 AM is a candidate slot but already booked, so it is shown disabled.
+    expect((await screen.findByRole("option", { name: "10:00 AM — Unavailable" })).disabled).toBe(true);
+    await user.selectOptions(screen.getByLabelText("Available Time"), "2027-01-15T10:30");
     await user.click(screen.getByRole("button", { name: "Create Appointment" }));
 
     expect(apiFetch).toHaveBeenCalledWith(
