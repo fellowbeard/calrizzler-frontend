@@ -1,41 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../utils/api.js";
-
-const DAYS = [
-  { label: "Monday", value: 1 },
-  { label: "Tuesday", value: 2 },
-  { label: "Wednesday", value: 3 },
-  { label: "Thursday", value: 4 },
-  { label: "Friday", value: 5 },
-  { label: "Saturday", value: 6 },
-  { label: "Sunday", value: 0 },
-];
-
-const DEFAULT_RANGE = {
-  opens_at: "09:00",
-  closes_at: "17:00",
-};
-
-const TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
-  const hour = Math.floor(index / 4);
-  const minute = (index % 4) * 15;
-
-  const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-  const label = `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`;
-
-  return { value, label };
-});
+import { DAYS, DEFAULT_RANGE, TIME_OPTIONS, formatRanges, normalizeTime, validateRanges } from "../utils/hours.js";
 
 function copyRanges(ranges) {
   return ranges.map((range) => ({ ...range }));
-}
-
-function inheritRanges(sourceRanges, existingRanges = []) {
-  return sourceRanges.map((range, index) => ({
-    id: existingRanges[index]?.id,
-    opens_at: range.opens_at,
-    closes_at: range.closes_at,
-  }));
 }
 
 function initialSchedule() {
@@ -47,20 +15,11 @@ function initialSchedule() {
   }));
 }
 
-function normalizeTime(value) {
-  if (!value) return "";
-
-  const match = String(value).match(/(\d{2}):(\d{2})/);
-
-  return match ? `${match[1]}:${match[2]}` : "";
-}
-
 function buildSchedule(records) {
   return DAYS.map((day) => {
     const ranges = records
       .filter((record) => Number(record.day_of_week) === day.value)
       .map((record) => ({
-        id: record.id,
         opens_at: normalizeTime(record.opens_at),
         closes_at: normalizeTime(record.closes_at),
       }))
@@ -79,50 +38,12 @@ function validateSchedule(schedule) {
   for (const day of schedule) {
     if (!day.isOpen) continue;
 
-    if (day.ranges.length === 0) {
-      return {
-        day: day.value,
-        message: "Add at least one time range.",
-      };
-    }
+    const message = validateRanges(day.ranges);
 
-    const sorted = [...day.ranges].sort((a, b) => a.opens_at.localeCompare(b.opens_at));
-
-    for (let index = 0; index < sorted.length; index += 1) {
-      const range = sorted[index];
-
-      if (!range.opens_at || !range.closes_at) {
-        return {
-          day: day.value,
-          message: "Select both opening and closing times.",
-        };
-      }
-
-      if (range.opens_at >= range.closes_at) {
-        return {
-          day: day.value,
-          message: "Closing time must be after opening time.",
-        };
-      }
-
-      if (index > 0 && sorted[index - 1].closes_at > range.opens_at) {
-        return {
-          day: day.value,
-          message: "Working hours cannot overlap.",
-        };
-      }
-    }
+    if (message) return { day: day.value, message };
   }
 
   return null;
-}
-
-function sameRange(record, range) {
-  return (
-    Number(record.day_of_week) === Number(range.day_of_week) &&
-    normalizeTime(record.opens_at) === range.opens_at &&
-    normalizeTime(record.closes_at) === range.closes_at
-  );
 }
 
 export default function BusinessHours({ currentUser }) {
@@ -182,7 +103,7 @@ export default function BusinessHours({ currentUser }) {
 
           return {
             ...day,
-            ranges: inheritRanges(monday.ranges, day.ranges),
+            ranges: copyRanges(monday.ranges),
           };
         });
       }
@@ -247,7 +168,7 @@ export default function BusinessHours({ currentUser }) {
           ? {
               ...day,
               customized: false,
-              ranges: inheritRanges(previous[0].ranges, day.ranges),
+              ranges: copyRanges(previous[0].ranges),
             }
           : day
       )
@@ -280,84 +201,23 @@ export default function BusinessHours({ currentUser }) {
     setSuccessMessage("");
 
     try {
-      const desiredRanges = schedule.flatMap((day) =>
+      const workingHours = schedule.flatMap((day) =>
         day.isOpen
-          ? day.ranges.map((range) => ({
-              ...range,
-              day_of_week: day.value,
-            }))
+          ? day.ranges.map(({ opens_at, closes_at }) => ({ day_of_week: day.value, opens_at, closes_at }))
           : []
       );
 
-      const savedById = new Map(savedRecords.map((record) => [record.id, record]));
-
-      const desiredIds = new Set(
-        desiredRanges.filter((range) => range.id !== null && range.id !== undefined).map((range) => range.id)
-      );
-
-      const recordsToDelete = savedRecords.filter((record) => !desiredIds.has(record.id));
-
-      const rangesToUpdate = desiredRanges.filter((range) => {
-        if (range.id === null || range.id === undefined) {
-          return false;
-        }
-
-        const saved = savedById.get(range.id);
-
-        return saved && !sameRange(saved, range);
+      // One request; the server swaps the whole week in a transaction.
+      const records = await apiFetch("/api/v1/working_hours/replace", {
+        method: "PUT",
+        body: JSON.stringify({ working_hours: workingHours }),
       });
 
-      const rangesToCreate = desiredRanges.filter((range) => range.id === null || range.id === undefined);
-
-      // Delete removed intervals first.
-      for (const record of recordsToDelete) {
-        await apiFetch(`/api/v1/working_hours/${record.id}`, { method: "DELETE" });
-      }
-
-      // Replace changed intervals to avoid temporary
-      // overlap conflicts with other changed intervals.
-      for (const range of rangesToUpdate) {
-        await apiFetch(`/api/v1/working_hours/${range.id}`, { method: "DELETE" });
-      }
-
-      const rangesToCreateOrReplace = [...rangesToUpdate, ...rangesToCreate].sort((a, b) => {
-        if (a.day_of_week !== b.day_of_week) {
-          return a.day_of_week - b.day_of_week;
-        }
-
-        return a.opens_at.localeCompare(b.opens_at);
-      });
-
-      for (const range of rangesToCreateOrReplace) {
-        await apiFetch("/api/v1/working_hours", {
-          method: "POST",
-          body: JSON.stringify({
-            working_hour: {
-              day_of_week: range.day_of_week,
-              opens_at: range.opens_at,
-              closes_at: range.closes_at,
-            },
-          }),
-        });
-      }
-
-      const refreshedRecords = await apiFetch("/api/v1/working_hours");
-
-      setSavedRecords(refreshedRecords);
-      setSchedule(buildSchedule(refreshedRecords));
+      setSavedRecords(records);
+      setSchedule(buildSchedule(records));
       setSuccessMessage("Business hours updated.");
     } catch (requestError) {
       setError(requestError.validationErrors?.[0]?.message || requestError.message);
-
-      // Refresh because individual requests are not atomic.
-      try {
-        const refreshedRecords = await apiFetch("/api/v1/working_hours");
-
-        setSavedRecords(refreshedRecords);
-        setSchedule(buildSchedule(refreshedRecords));
-      } catch {
-        // Preserve the original error.
-      }
     } finally {
       setIsSaving(false);
     }
@@ -385,27 +245,13 @@ export default function BusinessHours({ currentUser }) {
 
         {!error &&
           DAYS.map((day) => {
-            const ranges = savedRecords
-              .filter((record) => Number(record.day_of_week) === day.value)
-              .sort((a, b) => normalizeTime(a.opens_at).localeCompare(normalizeTime(b.opens_at)));
+            const ranges = savedRecords.filter((record) => Number(record.day_of_week) === day.value);
 
             return (
               <div key={day.value} className="business-hours-day">
                 <strong>{day.label}: </strong>
 
-                {ranges.length === 0
-                  ? "Closed"
-                  : ranges
-                      .map((range) => {
-                        const format = (value) => {
-                          const [hours, minutes] = normalizeTime(value).split(":").map(Number);
-
-                          return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours >= 12 ? "PM" : "AM"}`;
-                        };
-
-                        return `${format(range.opens_at)} – ${format(range.closes_at)}`;
-                      })
-                      .join(", ")}
+                {ranges.length === 0 ? "Closed" : formatRanges(ranges)}
               </div>
             );
           })}
@@ -456,7 +302,7 @@ export default function BusinessHours({ currentUser }) {
             {day.isOpen && (
               <div className="business-hours-ranges">
                 {day.ranges.map((range, rangeIndex) => (
-                  <div key={range.id ?? `new-${rangeIndex}`} className="business-hours-range">
+                  <div key={rangeIndex} className="business-hours-range">
                     <select
                       aria-label={`${day.label} opening time ${rangeIndex + 1}`}
                       value={range.opens_at}

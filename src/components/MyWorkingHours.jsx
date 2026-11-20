@@ -2,41 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiFetch } from "../utils/api.js";
-
-const DAYS = [
-  { label: "Monday", value: 1 },
-  { label: "Tuesday", value: 2 },
-  { label: "Wednesday", value: 3 },
-  { label: "Thursday", value: 4 },
-  { label: "Friday", value: 5 },
-  { label: "Saturday", value: 6 },
-  { label: "Sunday", value: 0 },
-];
-
-const DEFAULT_RANGE = {
-  opens_at: "09:00",
-  closes_at: "17:00",
-};
-
-const TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
-  const hour = Math.floor(index / 4);
-  const minute = (index % 4) * 15;
-
-  return {
-    value: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
-    label: `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`,
-  };
-});
-
-function normalizeTime(value) {
-  const match = String(value ?? "").match(/(\d{2}):(\d{2})/);
-  return match ? `${match[1]}:${match[2]}` : "";
-}
-
-function formatTime(value) {
-  const normalized = normalizeTime(value);
-  return TIME_OPTIONS.find((option) => option.value === normalized)?.label ?? normalized;
-}
+import { DAYS, DEFAULT_RANGE, TIME_OPTIONS, formatRanges, normalizeTime, validateRanges } from "../utils/hours.js";
 
 function emptySchedule() {
   return DAYS.map((day) => ({
@@ -75,64 +41,22 @@ function validateSchedule(schedule) {
   for (const day of schedule) {
     if (day.mode !== "custom") continue;
 
-    if (day.ranges.length === 0) {
-      return `${day.label}: Add at least one time range.`;
-    }
+    const message = validateRanges(day.ranges);
 
-    const ranges = [...day.ranges].sort((a, b) => a.opens_at.localeCompare(b.opens_at));
-
-    for (let index = 0; index < ranges.length; index++) {
-      const range = ranges[index];
-
-      if (!range.opens_at || !range.closes_at) {
-        return `${day.label}: Select opening and closing times.`;
-      }
-
-      if (range.opens_at >= range.closes_at) {
-        return `${day.label}: Closing time must be after opening time.`;
-      }
-
-      if (index > 0 && ranges[index - 1].closes_at > range.opens_at) {
-        return `${day.label}: Working hours cannot overlap.`;
-      }
-    }
+    if (message) return `${day.label}: ${message}`;
   }
 
   return null;
 }
 
-function sameDay(day, records) {
-  const saved = buildSchedule(records).find((item) => item.value === day.value);
-
-  if (!saved || saved.mode !== day.mode) return false;
-  if (day.mode !== "custom") return true;
-
-  const desiredRanges = [...day.ranges].sort((a, b) => a.opens_at.localeCompare(b.opens_at));
-
-  return (
-    saved.ranges.length === desiredRanges.length &&
-    saved.ranges.every(
-      (range, index) =>
-        range.opens_at === desiredRanges[index].opens_at && range.closes_at === desiredRanges[index].closes_at
-    )
-  );
-}
-
 function describeDay(day, businessHours) {
   if (day.mode === "closed") return "Not Working";
 
-  if (day.mode === "custom") {
-    return day.ranges.map((range) => `${formatTime(range.opens_at)} – ${formatTime(range.closes_at)}`).join(", ");
-  }
+  if (day.mode === "custom") return formatRanges(day.ranges);
 
-  const inherited = businessHours
-    .filter((record) => Number(record.day_of_week) === day.value)
-    .filter((record) => !record.is_closed)
-    .sort((a, b) => String(a.opens_at).localeCompare(String(b.opens_at)));
+  const inherited = businessHours.filter((record) => Number(record.day_of_week) === day.value);
 
-  if (inherited.length === 0) return "Closed";
-
-  return inherited.map((range) => `${formatTime(range.opens_at)} – ${formatTime(range.closes_at)}`).join(", ");
+  return inherited.length === 0 ? "Closed" : formatRanges(inherited);
 }
 
 export default function MyWorkingHours({ currentUser }) {
@@ -245,59 +169,29 @@ export default function MyWorkingHours({ currentUser }) {
     setSuccessMessage("");
 
     try {
-      const changedDays = schedule.filter((day) => !sameDay(day, savedRecords));
-
-      for (const day of changedDays) {
-        const existing = savedRecords.filter((record) => Number(record.day_of_week) === day.value);
-
-        for (const record of existing) {
-          await apiFetch(`/api/v1/user_working_hours/${record.id}`, {
-            method: "DELETE",
-          });
-        }
-
-        if (day.mode === "closed") {
-          await apiFetch(`/api/v1/users/${currentUser.id}/user_working_hours`, {
-            method: "POST",
-            body: JSON.stringify({
-              user_working_hour: {
-                day_of_week: day.value,
-                is_closed: true,
-              },
-            }),
-          });
-        }
-
+      const userWorkingHours = schedule.flatMap((day) => {
+        if (day.mode === "closed") return [{ day_of_week: day.value, is_closed: true }];
         if (day.mode === "custom") {
-          for (const range of day.ranges) {
-            await apiFetch(`/api/v1/users/${currentUser.id}/user_working_hours`, {
-              method: "POST",
-              body: JSON.stringify({
-                user_working_hour: {
-                  day_of_week: day.value,
-                  opens_at: range.opens_at,
-                  closes_at: range.closes_at,
-                  is_closed: false,
-                },
-              }),
-            });
-          }
+          return day.ranges.map(({ opens_at, closes_at }) => ({
+            day_of_week: day.value,
+            opens_at,
+            closes_at,
+            is_closed: false,
+          }));
         }
-      }
+
+        return []; // "inherit": no rows means the day follows business hours
+      });
+
+      // One request; the server swaps the whole week in a transaction.
+      await apiFetch(`/api/v1/users/${currentUser.id}/user_working_hours/replace`, {
+        method: "PUT",
+        body: JSON.stringify({ user_working_hours: userWorkingHours }),
+      });
 
       navigate("/settings");
     } catch (requestError) {
       setError(requestError.validationErrors?.[0]?.message || requestError.message);
-
-      // Saving isn't atomic; reload the actual server state.
-      try {
-        const refreshed = await apiFetch(`/api/v1/users/${currentUser.id}/user_working_hours`);
-
-        setSavedRecords(refreshed);
-        setSchedule(buildSchedule(refreshed));
-      } catch {
-        // Preserve the original error.
-      }
     } finally {
       setIsSaving(false);
     }

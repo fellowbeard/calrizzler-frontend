@@ -12,36 +12,33 @@ const jsonResponse = (body, options = {}) =>
 
 describe("apiFetch", () => {
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    localStorage.clear();
   });
 
   it("adds authentication headers and returns JSON", async () => {
+    localStorage.setItem("token", "test-token");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ ok: true })));
 
     await expect(apiFetch("/api/v1/dashboard")).resolves.toEqual({ ok: true });
 
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/dashboard",
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: expect.stringContaining("Bearer"),
-          "Content-Type": "application/json",
-        }),
-      })
-    );
+    const [url, options] = fetch.mock.calls[0];
+
+    expect(url).toBe("/api/v1/dashboard");
+    expect(options.headers.get("Authorization")).toBe("Bearer test-token");
+    expect(options.headers.get("Content-Type")).toBe("application/json");
   });
 
   it("allows public requests to omit authentication", async () => {
+    localStorage.setItem("token", "test-token");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ token: "abc" })));
 
     await apiFetch("/api/v1/login", { method: "POST", auth: false });
 
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/login",
-      expect.objectContaining({
-        headers: { "Content-Type": "application/json" },
-      })
-    );
+    const [, options] = fetch.mock.calls[0];
+
+    expect(options.headers.get("Authorization")).toBeNull();
+    expect(options.headers.get("Content-Type")).toBe("application/json");
   });
 
   it("normalizes API validation errors for forms", async () => {

@@ -2,16 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../utils/api.js";
 import { TIMEZONE_OPTIONS } from "../utils/timezone.js";
+import { DAYS, formatRanges } from "../utils/hours.js";
 
-const DAYS = [
-  { label: "Monday", value: 1 },
-  { label: "Tuesday", value: 2 },
-  { label: "Wednesday", value: 3 },
-  { label: "Thursday", value: 4 },
-  { label: "Friday", value: 5 },
-  { label: "Saturday", value: 6 },
-  { label: "Sunday", value: 0 },
-];
 
 const EMPTY_FORM = {
   business_name: "",
@@ -42,25 +34,6 @@ function formatStreetAddress(value) {
     .trim()
     .toLowerCase()
     .replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
-}
-
-function normalizeTime(value) {
-  if (!value) return "";
-
-  const match = String(value).match(/(\d{2}):(\d{2})/);
-
-  return match ? `${match[1]}:${match[2]}` : "";
-}
-
-function formatTime(value) {
-  const normalized = normalizeTime(value);
-
-  if (!normalized) return value || "";
-
-  const [hours, minutes] = normalized.split(":").map(Number);
-  const period = hours >= 12 ? "PM" : "AM";
-
-  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${period}`;
 }
 
 export default function BusinessInformation({ currentUser, setCurrentAccount }) {
@@ -405,17 +378,13 @@ export default function BusinessInformation({ currentUser, setCurrentAccount }) 
         <h2>Business Hours</h2>
 
         {DAYS.map((day) => {
-          const ranges = businessHours
-            .filter((record) => Number(record.day_of_week) === day.value)
-            .sort((a, b) => normalizeTime(a.opens_at).localeCompare(normalizeTime(b.opens_at)));
+          const ranges = businessHours.filter((record) => Number(record.day_of_week) === day.value);
 
           return (
             <div key={day.value}>
               <strong>{day.label}: </strong>
 
-              {ranges.length === 0
-                ? "Closed"
-                : ranges.map((range) => `${formatTime(range.opens_at)} – ${formatTime(range.closes_at)}`).join(", ")}
+              {ranges.length === 0 ? "Closed" : formatRanges(ranges)}
             </div>
           );
         })}

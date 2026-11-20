@@ -35,54 +35,18 @@ async function parseJson(response) {
   }
 }
 
+// The API always reports failures as { error: { code, message, details } }.
+// `details` is a hash of field => messages for validation errors, otherwise null.
 function buildApiError(response, data) {
-  if (data?.error) {
-    const details = normalizeErrorDetails(data.error.details);
-
-    return {
-      status: response.status,
-      code: data.error.code || "request_failed",
-      message: data.error.message || "Request failed.",
-      details,
-      validationErrors: normalizeValidationErrors(details),
-    };
-  }
-
-  if (data?.errors) {
-    const details = normalizeErrorDetails(data.errors);
-
-    return {
-      status: response.status,
-      code: "validation_failed",
-      message: Array.isArray(data.errors) ? data.errors.join(", ") : "Validation failed.",
-      details,
-      validationErrors: normalizeValidationErrors(details),
-    };
-  }
+  const details = data?.error?.details ?? null;
 
   return {
     status: response.status,
-    code: "request_failed",
-    message: response.statusText || "Request failed.",
-    details: null,
-    validationErrors: [],
+    code: data?.error?.code || "request_failed",
+    message: data?.error?.message || response.statusText || "Request failed.",
+    details,
+    validationErrors: normalizeValidationErrors(details),
   };
-}
-
-function normalizeErrorDetails(details) {
-  if (!details) {
-    return null;
-  }
-
-  if (Array.isArray(details)) {
-    return details;
-  }
-
-  if (typeof details === "object") {
-    return details;
-  }
-
-  return [{ type: "invalid", message: String(details) }];
 }
 
 function normalizeValidationErrors(details) {

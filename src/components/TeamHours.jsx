@@ -1,27 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api.js";
+import { DAYS, formatTime, sortRanges } from "../utils/hours.js";
 
-const DAYS = [
-  { label: "Monday", value: 1 },
-  { label: "Tuesday", value: 2 },
-  { label: "Wednesday", value: 3 },
-  { label: "Thursday", value: 4 },
-  { label: "Friday", value: 5 },
-  { label: "Saturday", value: 6 },
-  { label: "Sunday", value: 0 },
-];
-
-function formatTime(value) {
-  if (!value) return "";
-
-  const match = String(value).match(/(\d{2}):(\d{2})/);
-  if (!match) return "";
-
-  const hour = Number(match[1]);
-  const minute = match[2];
-
-  return `${hour % 12 || 12}:${minute} ${hour < 12 ? "AM" : "PM"}`;
-}
 
 function getDayHours(day, providerHours, businessHours) {
   const overrides = providerHours.filter((hour) => Number(hour.day_of_week) === day);
@@ -119,10 +99,7 @@ export default function TeamHours({ users = [] }) {
                       {hours.length === 0 ? (
                         <span className="team-hours-closed">Closed</span>
                       ) : (
-                        hours
-                          .slice()
-                          .sort((a, b) => String(a.opens_at).localeCompare(String(b.opens_at)))
-                          .map((range, index) => (
+                        sortRanges(hours).map((range, index) => (
                             <span key={range.id ?? index} className="team-hours-time">
                               {formatTime(range.opens_at)} – {formatTime(range.closes_at)}
                             </span>
