@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { apiFetch } from "../utils/api.js";
 import { TIMEZONE_OPTIONS } from "../utils/timezone.js";
 import { DAYS, formatRanges } from "../utils/hours.js";
-
+import { useZipLookup } from "../hooks/useZipLookup.js";
+import { formatStreetAddress } from "../utils/addressFormatting.js";
 
 const EMPTY_FORM = {
   business_name: "",
@@ -29,13 +30,6 @@ function accountToForm(account) {
   };
 }
 
-function formatStreetAddress(value) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
-}
-
 export default function BusinessInformation({ currentUser, setCurrentAccount }) {
   const isOwner = currentUser?.role === "owner";
 
@@ -49,6 +43,8 @@ export default function BusinessInformation({ currentUser, setCurrentAccount }) 
 
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const { lookupZip, cancelLookup, isLookingUpZip, zipError } = useZipLookup();
 
   useEffect(() => {
     let active = true;
@@ -85,9 +81,24 @@ export default function BusinessInformation({ currentUser, setCurrentAccount }) 
     }));
   }
 
+  function handleZipChange(event) {
+    const zip = event.target.value.replace(/\D/g, "").slice(0, 5);
+
+    updateField("postal_code", zip);
+
+    void lookupZip(zip, ({ city, state }) => {
+      setForm((previous) => ({
+        ...previous,
+        city,
+        state,
+      }));
+    });
+  }
+
   function handleStartEditing() {
     if (!isOwner || !account) return;
 
+    cancelLookup();
     setForm(accountToForm(account));
     setError("");
     setSuccessMessage("");
@@ -95,6 +106,8 @@ export default function BusinessInformation({ currentUser, setCurrentAccount }) 
   }
 
   function handleCancelEditing() {
+    cancelLookup();
+
     if (account) {
       setForm(accountToForm(account));
     }
@@ -108,6 +121,7 @@ export default function BusinessInformation({ currentUser, setCurrentAccount }) 
 
     if (!isOwner || isSaving) return;
 
+    cancelLookup();
     setIsSaving(true);
     setError("");
     setSuccessMessage("");
@@ -319,11 +333,19 @@ export default function BusinessInformation({ currentUser, setCurrentAccount }) 
                 maxLength={5}
                 pattern="[0-9]{5}"
                 value={form.postal_code}
-                onChange={(event) => updateField("postal_code", event.target.value.replace(/\D/g, "").slice(0, 5))}
+                onChange={handleZipChange}
                 disabled={isSaving}
                 autoComplete="postal-code"
                 placeholder="70130"
               />
+
+              {isLookingUpZip && <p role="status">Looking up ZIP code...</p>}
+
+              {zipError && (
+                <p className="error" role="alert">
+                  {zipError} You can enter the city and state manually.
+                </p>
+              )}
             </div>
 
             <div>
@@ -334,7 +356,10 @@ export default function BusinessInformation({ currentUser, setCurrentAccount }) 
                 name="city"
                 type="text"
                 value={form.city}
-                onChange={(event) => updateField("city", event.target.value)}
+                onChange={(event) => {
+                  cancelLookup();
+                  updateField("city", event.target.value);
+                }}
                 disabled={isSaving}
                 autoComplete="address-level2"
                 placeholder="City"
@@ -349,7 +374,10 @@ export default function BusinessInformation({ currentUser, setCurrentAccount }) 
                 name="state"
                 type="text"
                 value={form.state}
-                onChange={(event) => updateField("state", event.target.value.toUpperCase().slice(0, 2))}
+                onChange={(event) => {
+                  cancelLookup();
+                  updateField("state", event.target.value.toUpperCase().slice(0, 2));
+                }}
                 disabled={isSaving}
                 autoComplete="address-level1"
                 maxLength={2}
