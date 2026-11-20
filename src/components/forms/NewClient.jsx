@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/api.js";
+import { useZipLookup } from "../../hooks/useZipLookup.js";
+import { formatStreetAddress } from "../../utils/addressFormatting.js";
 
 export default function NewClient() {
   const navigate = useNavigate();
@@ -19,21 +21,50 @@ export default function NewClient() {
 
   const [error, setError] = useState("");
 
+  const { lookupZip, cancelLookup, isLookingUpZip, zipError } = useZipLookup();
+
   function handleChange(event) {
-    setClient({
-      ...client,
-      [event.target.name]: event.target.value,
-    });
+    const { name, value } = event.target;
+
+    if (name === "postal_code") {
+      const zip = value.replace(/\D/g, "").slice(0, 5);
+
+      setClient((previous) => ({
+        ...previous,
+        postal_code: zip,
+      }));
+
+      void lookupZip(zip, ({ city, state }) => {
+        setClient((previous) => ({
+          ...previous,
+          city,
+          state,
+        }));
+      });
+
+      return;
+    }
+
+    if (name === "city" || name === "state") {
+      cancelLookup();
+    }
+
+    setClient((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   }
 
   function handleSubmit(event) {
     event.preventDefault();
+    cancelLookup();
 
     apiFetch("/api/v1/clients", {
       method: "POST",
       body: JSON.stringify({
         client: {
           ...client,
+          address_line1: formatStreetAddress(client.address_line1),
         },
       }),
     })
@@ -85,19 +116,32 @@ export default function NewClient() {
             autoComplete="address-line2"
           />
 
-          <label htmlFor="city">City</label>
-          <input id="city" name="city" value={client.city} onChange={handleChange} autoComplete="address-level2" />
-
-          <label htmlFor="state">State</label>
-          <input id="state" name="state" value={client.state} onChange={handleChange} autoComplete="address-level1" />
-
-          <label htmlFor="postal_code">ZIP / Postal Code</label>
+          <label htmlFor="postal_code">ZIP Code</label>
           <input
             id="postal_code"
             name="postal_code"
             value={client.postal_code}
             onChange={handleChange}
             autoComplete="postal-code"
+            inputMode="numeric"
+            maxLength={5}
+          />
+
+          {isLookingUpZip && <p>Looking up ZIP code...</p>}
+
+          {zipError && <p className="error">{zipError} You can enter the city and state manually.</p>}
+
+          <label htmlFor="city">City</label>
+          <input id="city" name="city" value={client.city} onChange={handleChange} autoComplete="address-level2" />
+
+          <label htmlFor="state">State</label>
+          <input
+            id="state"
+            name="state"
+            value={client.state}
+            onChange={handleChange}
+            autoComplete="address-level1"
+            maxLength={2}
           />
         </fieldset>
 

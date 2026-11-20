@@ -75,7 +75,7 @@ export default function StaffManagement({ currentUser }) {
     }
 
     const confirmed = window.confirm(
-      `Deactivate ${user.first_name || user.email}? They will no longer be able to access the account.`
+      `Deactivate ${user.first_name || user.email}? They will no longer be able to access the account, and all future appointments will be canceled.`
     );
 
     if (!confirmed) return;

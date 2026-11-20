@@ -4,6 +4,8 @@ import AppointmentForm from "./forms/AppointmentForm.jsx";
 import { apiFetch } from "../utils/api.js";
 import { formatDuration } from "../utils/duration.js";
 import { calculateEndTime, formatDateTimeInTimezone } from "../utils/timezone.js";
+import { useZipLookup } from "../hooks/useZipLookup.js";
+import { formatStreetAddress } from "../utils/addressFormatting.js";
 
 export default function ClientCard({ currentUser, currentAccount }) {
   const { id } = useParams();
@@ -11,6 +13,7 @@ export default function ClientCard({ currentUser, currentAccount }) {
 
   const [client, setClient] = useState(null);
   const [isEditingClient, setIsEditingClient] = useState(false);
+
   const [clientForm, setClientForm] = useState({
     first_name: "",
     last_name: "",
@@ -22,15 +25,20 @@ export default function ClientCard({ currentUser, currentAccount }) {
     state: "",
     postal_code: "",
   });
+
   const [noteBody, setNoteBody] = useState("");
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteBody, setEditingNoteBody] = useState("");
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const { lookupZip, cancelLookup, isLookingUpZip, zipError } = useZipLookup();
+
   const fetchClient = useCallback(() => {
     apiFetch(`/api/v1/clients/${id}`)
       .then((data) => {
+        cancelLookup();
+
         setClient(data);
         setClientForm({
           first_name: data.first_name || "",
@@ -47,28 +55,52 @@ export default function ClientCard({ currentUser, currentAccount }) {
       .catch((error) => {
         setErrorMessage(error.message);
       });
-  }, [id]);
+  }, [id, cancelLookup]);
 
   useEffect(() => {
     fetchClient();
   }, [fetchClient]);
 
-  if (!client) return <p>Loading client...</p>;
-
   function handleClientChange(event) {
-    setClientForm({
-      ...clientForm,
-      [event.target.name]: event.target.value,
-    });
+    const { name, value } = event.target;
+
+    if (name === "postal_code") {
+      const zip = value.replace(/\D/g, "").slice(0, 5);
+
+      setClientForm((previous) => ({
+        ...previous,
+        postal_code: zip,
+      }));
+
+      void lookupZip(zip, ({ city, state }) => {
+        setClientForm((previous) => ({
+          ...previous,
+          city,
+          state,
+        }));
+      });
+
+      return;
+    }
+
+    if (name === "city" || name === "state") {
+      cancelLookup();
+    }
+
+    setClientForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   }
 
   function handleUpdateClient(event) {
     event.preventDefault();
+    cancelLookup();
 
     apiFetch(`/api/v1/clients/${client.id}`, {
       method: "PATCH",
       body: JSON.stringify({
-        client: clientForm,
+        client: { ...clientForm, address_line1: formatStreetAddress(clientForm.address_line1) },
       }),
     })
       .then((updatedClient) => {
@@ -79,6 +111,25 @@ export default function ClientCard({ currentUser, currentAccount }) {
       .catch((error) => {
         setErrorMessage(error.message);
       });
+  }
+
+  function handleCancelClientEdit() {
+    cancelLookup();
+
+    setClientForm({
+      first_name: client.first_name || "",
+      last_name: client.last_name || "",
+      email: client.email || "",
+      phone: client.phone || "",
+      address_line1: client.address_line1 || "",
+      address_line2: client.address_line2 || "",
+      city: client.city || "",
+      state: client.state || "",
+      postal_code: client.postal_code || "",
+    });
+
+    setIsEditingClient(false);
+    setErrorMessage("");
   }
 
   function handleCreateAppointment() {
@@ -151,6 +202,8 @@ export default function ClientCard({ currentUser, currentAccount }) {
     setEditingAppointment(null);
   }
 
+  if (!client) return <p>Loading client...</p>;
+
   return (
     <section className="client-card">
       {errorMessage && <p className="error">{errorMessage}</p>}
@@ -190,6 +243,21 @@ export default function ClientCard({ currentUser, currentAccount }) {
               autoComplete="address-line2"
             />
 
+            <label htmlFor="edit_postal_code">ZIP Code</label>
+            <input
+              id="edit_postal_code"
+              name="postal_code"
+              value={clientForm.postal_code}
+              onChange={handleClientChange}
+              autoComplete="postal-code"
+              inputMode="numeric"
+              maxLength={5}
+            />
+
+            {isLookingUpZip && <p>Looking up ZIP code...</p>}
+
+            {zipError && <p className="error">{zipError} You can enter the city and state manually.</p>}
+
             <label htmlFor="edit_city">City</label>
             <input
               id="edit_city"
@@ -206,21 +274,13 @@ export default function ClientCard({ currentUser, currentAccount }) {
               value={clientForm.state}
               onChange={handleClientChange}
               autoComplete="address-level1"
-            />
-
-            <label htmlFor="edit_postal_code">ZIP / Postal Code</label>
-            <input
-              id="edit_postal_code"
-              name="postal_code"
-              value={clientForm.postal_code}
-              onChange={handleClientChange}
-              autoComplete="postal-code"
+              maxLength={2}
             />
           </fieldset>
 
           <button type="submit">Save Client</button>
 
-          <button type="button" onClick={() => setIsEditingClient(false)}>
+          <button type="button" onClick={handleCancelClientEdit}>
             Cancel
           </button>
         </form>
@@ -241,6 +301,7 @@ export default function ClientCard({ currentUser, currentAccount }) {
 
               <address>
                 {client.address_line1 && <div>{client.address_line1}</div>}
+
                 {client.address_line2 && <div>{client.address_line2}</div>}
 
                 {(client.city || client.state || client.postal_code) && (
@@ -312,7 +373,14 @@ export default function ClientCard({ currentUser, currentAccount }) {
                   {appointment.notes?.trim() && (
                     <div className="appointment-notes">
                       <strong>Appointment Notes:</strong>
-                      <div style={{ whiteSpace: "pre-wrap" }}>{appointment.notes}</div>
+
+                      <div
+                        style={{
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {appointment.notes}
+                      </div>
                     </div>
                   )}
                 </>
